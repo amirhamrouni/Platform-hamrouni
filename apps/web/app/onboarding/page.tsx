@@ -3,6 +3,8 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { learnerProfileSchema } from '../../lib/learner';
+import { getFirebaseAuth, isFirebaseConfigured } from '../../lib/firebase';
+import { createLearner } from '../../lib/learner-repository';
 
 const languages = [
   ['nl', 'Nederlands'], ['ar', 'Arabisch'], ['tr', 'Turks'], ['pl', 'Pools'],
@@ -12,9 +14,20 @@ const languages = [
 export default function OnboardingPage() {
   const router = useRouter();
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!isFirebaseConfigured) {
+      setError('Firebase-configuratie ontbreekt nog.');
+      return;
+    }
+    const user = getFirebaseAuth().currentUser;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
     const form = new FormData(event.currentTarget);
     const result = learnerProfileSchema.safeParse({
       name: form.get('name'),
@@ -28,8 +41,15 @@ export default function OnboardingPage() {
       return;
     }
 
-    sessionStorage.setItem('leersprong:learner', JSON.stringify(result.data));
-    router.push('/assessment');
+    setBusy(true); setError('');
+    try {
+      const learnerId = await createLearner(user.uid, result.data);
+      sessionStorage.setItem('leersprong:learner', JSON.stringify(result.data));
+      sessionStorage.setItem('leersprong:learnerId', learnerId);
+      router.push('/assessment');
+    } catch {
+      setError('Het leerprofiel kon niet worden opgeslagen. Probeer opnieuw.');
+    } finally { setBusy(false); }
   }
 
   return (
@@ -44,7 +64,7 @@ export default function OnboardingPage() {
           <label>Thuistaal<select name="homeLanguage" defaultValue="nl">{languages.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
           <label className="checkRow"><input type="checkbox" name="supportLanguageEnabled" />Leg moeilijke uitleg ook uit in de thuistaal</label>
           {error && <p className="formError" role="alert">{error}</p>}
-          <button className="primaryButton" type="submit">Start niveautest <span>→</span></button>
+          <button className="primaryButton" type="submit" disabled={busy}>Start niveautest <span>→</span></button>
         </form>
       </section>
     </main>
