@@ -3,22 +3,63 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import type { SkillScore } from '../../lib/learner';
+import { isFirebaseConfigured } from '../../lib/firebase';
+import { resolveCurrentUser } from '../../lib/auth';
+import { loadLearner, loadSkillScores, type PersistedLearner } from '../../lib/learner-repository';
 
-type Learner = { name: string; group: number; homeLanguage: string; supportLanguageEnabled: boolean };
+type Learner = Pick<PersistedLearner, 'name' | 'group' | 'homeLanguage' | 'supportLanguageEnabled'>;
 
 export default function DashboardPage() {
   const [learner, setLearner] = useState<Learner | null>(null);
   const [scores, setScores] = useState<SkillScore[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedLearner = sessionStorage.getItem('leersprong:learner');
-    const storedScores = sessionStorage.getItem('leersprong:assessment');
-    if (storedLearner) setLearner(JSON.parse(storedLearner));
-    if (storedScores) setScores(JSON.parse(storedScores));
+    let cancelled = false;
+
+    async function hydrateDashboard() {
+      const learnerId = sessionStorage.getItem('leersprong:learnerId');
+
+      if (isFirebaseConfigured && learnerId) {
+        try {
+          const user = await resolveCurrentUser();
+          if (user) {
+            const [storedLearner, storedScores] = await Promise.all([
+              loadLearner(user.uid, learnerId),
+              loadSkillScores(user.uid, learnerId),
+            ]);
+
+            if (!cancelled && storedLearner) {
+              setLearner(storedLearner);
+              setScores(storedScores);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch {
+          // Fall back to session state for the current browser session.
+        }
+      }
+
+      const sessionLearner = sessionStorage.getItem('leersprong:learner');
+      const sessionScores = sessionStorage.getItem('leersprong:assessment');
+      if (!cancelled) {
+        if (sessionLearner) setLearner(JSON.parse(sessionLearner));
+        if (sessionScores) setScores(JSON.parse(sessionScores));
+        setLoading(false);
+      }
+    }
+
+    void hydrateDashboard();
+    return () => { cancelled = true; };
   }, []);
 
   const sorted = [...scores].sort((a, b) => a.mastery - b.mastery);
   const focus = sorted.slice(0, 3);
+
+  if (loading) {
+    return <main className="flowPage"><section className="flowCard"><p>Je leerpad wordt geladen…</p></section></main>;
+  }
 
   if (!learner) {
     return <main className="flowPage"><section className="flowCard"><h1>Nog geen leerprofiel</h1><p>Maak eerst het profiel en de niveautest af.</p><Link className="primaryButton" href="/onboarding">Begin opnieuw →</Link></section></main>;
