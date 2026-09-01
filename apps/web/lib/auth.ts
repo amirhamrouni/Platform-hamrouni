@@ -1,6 +1,14 @@
 'use client';
 
-import { GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut } from 'firebase/auth';
+import {
+  GoogleAuthProvider,
+  User,
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+} from 'firebase/auth';
 import { getFirebaseAuth } from './firebase';
 
 export async function signInWithGoogle() {
@@ -17,4 +25,23 @@ export async function signInWithEmail(email: string, password: string) {
 
 export async function signOutCurrentUser() {
   return signOut(getFirebaseAuth());
+}
+
+export async function resolveCurrentUser(): Promise<User | null> {
+  const auth = getFirebaseAuth();
+  if (auth.currentUser) return auth.currentUser;
+
+  return new Promise<User | null>((resolve, reject) => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (user) => {
+        unsubscribe();
+        resolve(user);
+      },
+      (error) => {
+        unsubscribe();
+        reject(error);
+      },
+    );
+  });
 }
