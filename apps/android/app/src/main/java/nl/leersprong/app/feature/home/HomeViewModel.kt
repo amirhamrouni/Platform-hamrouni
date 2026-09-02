@@ -20,7 +20,7 @@ data class HomeTask(
 data class HomeUiState(
     val learnerName: String = "Leerling",
     val group: Int = 4,
-    val streakDays: Int? = null,
+    val streakDays: Int = 0,
     val xp: Int = 0,
     val badges: Int = 0,
     val currentLesson: String = "Optellen tot 20",
