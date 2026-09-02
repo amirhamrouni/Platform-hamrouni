@@ -67,10 +67,21 @@ export default function DashboardPage() {
 
   return (
     <main className="flowPage">
-      <section className="flowCard">
+      <section className="flowCard dashboardCard">
         <span className="eyebrow">PERSOONLIJK LEERPAD</span>
-        <h1>Goed gedaan, {learner.name}! 🎉</h1>
-        <p>Je startniveau voor groep {learner.group} is klaar. LeerSprong kiest eerst de vaardigheden waar je de meeste winst kunt maken.</p>
+        <h1>Hoi {learner.name}! 👋</h1>
+        <p>Je startniveau voor groep {learner.group} is klaar. Vandaag oefenen we eerst wat jou de meeste vooruitgang geeft.</p>
+
+        <article className="todayLesson">
+          <div>
+            <span className="eyebrow">AANBEVOLEN VOOR JOU</span>
+            <h2>✖️ Rekenen · Tafels begrijpen</h2>
+            <p>Leer vermenigvuldigen met gelijke groepjes. De oefeningen passen zich aan jouw antwoorden aan.</p>
+            <div className="lessonMeta"><span>Groep 4</span><span>± 12 min</span><span>Adaptief</span></div>
+          </div>
+          <Link className="primaryButton" href="/lesson/multiplication">Start les <span>→</span></Link>
+        </article>
+
         <div className="resultList">
           {focus.map((score) => (
             <article className="resultItem" key={score.skillId}>
@@ -81,7 +92,6 @@ export default function DashboardPage() {
           ))}
         </div>
         {learner.supportLanguageEnabled && <p>🌍 Thuistaalhulp staat aan. Moeilijke uitleg kan ondersteund worden zonder het Nederlands te vervangen.</p>}
-        <Link className="primaryButton" href="/">Ga naar vandaag <span>→</span></Link>
       </section>
     </main>
   );
