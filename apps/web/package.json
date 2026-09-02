@@ -8,7 +8,7 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
-    "test": "node --experimental-strip-types --test lib/activity-engine.test.ts"
+    "test": "node --experimental-strip-types --test lib/activity-engine.test.mjs"
   },
   "dependencies": {
     "firebase": "^12.2.1",
