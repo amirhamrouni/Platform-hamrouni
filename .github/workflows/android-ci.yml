@@ -24,3 +24,9 @@ jobs:
           gradle-version: '9.6.0'
       - name: Build debug APK
         run: gradle -p apps/android :app:assembleDebug --stacktrace
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: leersprong-debug-apk
+          path: apps/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
