@@ -24,11 +24,21 @@ jobs:
           gradle-version: '9.6.0'
       - name: Run Android unit tests
         run: gradle -p apps/android :app:testDebugUnitTest --stacktrace
+      - name: Run Android lint
+        run: gradle -p apps/android :app:lintDebug --stacktrace
       - name: Build debug APK
         run: gradle -p apps/android :app:assembleDebug --stacktrace
+      - name: Build release APK
+        run: gradle -p apps/android :app:assembleRelease --stacktrace
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: leersprong-debug-apk
           path: apps/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Upload unsigned release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: leersprong-release-unsigned-apk
+          path: apps/android/app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
