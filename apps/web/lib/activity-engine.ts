@@ -63,7 +63,7 @@ export function evaluateActivity(activity: LearningActivity, response: unknown):
     return activity.acceptedAnswers.some((answer) => answer.trim().toLocaleLowerCase('nl-NL') === normalized);
   }
 
-  if (!Array.isArray(response)) return false;
+  if (activity.kind !== 'ordering' || !Array.isArray(response)) return false;
   return response.length === activity.correctOrder.length
     && response.every((item, index) => item === activity.correctOrder[index]);
 }
