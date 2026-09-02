@@ -30,6 +30,11 @@ class LessonLibraryTest {
                         assertTrue("${step.id} ordering needs options", step.options.size >= 2)
                         assertEquals(step.options.map { it.id }.toSet(), step.correctOrder.toSet())
                     }
+                    LessonInteractionType.WordPattern -> {
+                        val target = step.targetWord.orEmpty()
+                        assertTrue("${step.id} needs a target word", target.isNotBlank())
+                        assertTrue("${step.id} target must contain only letters", target.all(Char::isLetter))
+                    }
                 }
             }
         }
@@ -42,6 +47,16 @@ class LessonLibraryTest {
             val subjects = LessonLibrary.forGroup(group).map { it.subject }.toSet()
             assertTrue("Groep $group missing Nederlands", "Nederlands" in subjects)
             assertTrue("Groep $group missing Engels", "Engels" in subjects)
+        }
+    }
+
+    @Test
+    fun groepFourToEightHaveWordChallenge() {
+        (4..8).forEach { group ->
+            assertTrue(
+                "Groep $group missing WoordChallenge",
+                LessonLibrary.forGroup(group).any { lesson -> lesson.steps.any { it.interaction == LessonInteractionType.WordPattern } },
+            )
         }
     }
 }
