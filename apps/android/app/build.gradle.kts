@@ -4,6 +4,12 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
+val releaseStorePath = providers.environmentVariable("LEERSPRONG_KEYSTORE_PATH").orNull
+val releaseStorePassword = providers.environmentVariable("LEERSPRONG_KEYSTORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("LEERSPRONG_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("LEERSPRONG_KEY_PASSWORD").orNull
+val hasReleaseSigning = listOf(releaseStorePath, releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }
+
 android {
     namespace = "nl.leersprong.app"
     compileSdk = 37
@@ -21,9 +27,23 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(requireNotNull(releaseStorePath))
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
