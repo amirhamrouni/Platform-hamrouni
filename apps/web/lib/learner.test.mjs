@@ -12,6 +12,7 @@ test('uses multiple evidence items per skill and reports evidence count', () => 
   assert.equal(score.skillId, 'math-table-7');
   assert.equal(score.evidenceCount, 2);
   assert.ok(score.mastery > 25 && score.mastery < 75);
+  assert.ok(score.evidenceConfidence >= 50);
 });
 
 test('does not convert one correct answer into 100 percent mastery', () => {
@@ -21,6 +22,7 @@ test('does not convert one correct answer into 100 percent mastery', () => {
 
   assert.ok(score.mastery < 100);
   assert.equal(score.evidenceCount, 1);
+  assert.ok(score.evidenceConfidence < 50);
 });
 
 test('hard correct evidence is worth more than easy correct evidence', () => {
@@ -42,4 +44,25 @@ test('mastery priority remains bounded and actionable', () => {
 
   assert.ok(score.mastery >= 0 && score.mastery <= 100);
   assert.equal(score.priority, 'high');
+});
+
+test('low evidence confidence prevents premature low priority', () => {
+  const [score] = scoreAssessment([
+    { skillId: 'world-orientation-basic', correct: true, confidence: 3, difficulty: 3 },
+  ]);
+
+  assert.notEqual(score.priority, 'low');
+  assert.ok(score.evidenceConfidence < 50);
+});
+
+test('repeated strong evidence can earn low priority', () => {
+  const [score] = scoreAssessment([
+    { skillId: 'nl-spelling-open-closed', correct: true, confidence: 3, difficulty: 3 },
+    { skillId: 'nl-spelling-open-closed', correct: true, confidence: 3, difficulty: 3 },
+    { skillId: 'nl-spelling-open-closed', correct: true, confidence: 3, difficulty: 3 },
+  ]);
+
+  assert.ok(score.mastery >= 75);
+  assert.ok(score.evidenceConfidence >= 50);
+  assert.equal(score.priority, 'low');
 });
