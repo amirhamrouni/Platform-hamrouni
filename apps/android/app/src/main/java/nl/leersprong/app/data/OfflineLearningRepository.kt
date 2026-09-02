@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.Flow
 import nl.leersprong.app.data.local.LearningDatabase
 import nl.leersprong.app.data.local.LessonAttemptEntity
 import nl.leersprong.app.data.local.SkillReviewEntity
+import nl.leersprong.app.review.FsrsScheduler
+import nl.leersprong.app.review.FsrsState
 import java.util.UUID
 
 class OfflineLearningRepository(context: Context) {
@@ -37,12 +39,50 @@ class OfflineLearningRepository(context: Context) {
         )
     }
 
+    suspend fun scheduleReview(
+        skillId: String,
+        masteryPercent: Int,
+        evidenceCount: Int,
+        now: Long = System.currentTimeMillis(),
+    ): Long {
+        val previous = dao.getReview(skillId)
+        val priorState = previous?.let {
+            FsrsState(
+                stability = it.fsrsStability,
+                difficulty = it.fsrsDifficulty,
+                reps = it.fsrsReps,
+                lapses = it.fsrsLapses,
+                lastReviewAtEpochMs = it.fsrsLastReviewAtEpochMs,
+            )
+        }
+        val rating = FsrsScheduler.ratingForMastery(masteryPercent)
+        val result = FsrsScheduler.schedule(priorState, rating, now)
+
+        dao.upsertReview(
+            SkillReviewEntity(
+                skillId = skillId,
+                masteryPercent = masteryPercent.coerceIn(0, 100),
+                evidenceCount = evidenceCount.coerceAtLeast(0),
+                nextReviewAtEpochMs = result.nextReviewAtEpochMs,
+                updatedAtEpochMs = now,
+                pendingSync = true,
+                fsrsStability = result.state.stability,
+                fsrsDifficulty = result.state.difficulty,
+                fsrsReps = result.state.reps,
+                fsrsLapses = result.state.lapses,
+                fsrsLastReviewAtEpochMs = result.state.lastReviewAtEpochMs,
+            ),
+        )
+        return result.nextReviewAtEpochMs
+    }
+
     suspend fun updateReview(
         skillId: String,
         masteryPercent: Int,
         evidenceCount: Int,
         nextReviewAtEpochMs: Long,
     ) {
+        val existing = dao.getReview(skillId)
         dao.upsertReview(
             SkillReviewEntity(
                 skillId = skillId,
@@ -50,6 +90,11 @@ class OfflineLearningRepository(context: Context) {
                 evidenceCount = evidenceCount.coerceAtLeast(0),
                 nextReviewAtEpochMs = nextReviewAtEpochMs,
                 updatedAtEpochMs = System.currentTimeMillis(),
+                fsrsStability = existing?.fsrsStability ?: 0.0,
+                fsrsDifficulty = existing?.fsrsDifficulty ?: 0.0,
+                fsrsReps = existing?.fsrsReps ?: 0,
+                fsrsLapses = existing?.fsrsLapses ?: 0,
+                fsrsLastReviewAtEpochMs = existing?.fsrsLastReviewAtEpochMs ?: 0L,
             ),
         )
     }
