@@ -11,6 +11,7 @@ class OfflineLearningRepository(context: Context) {
     private val dao = LearningDatabase.get(context).learningDao()
 
     fun observeReviews(): Flow<List<SkillReviewEntity>> = dao.observeReviews()
+    fun observeTotalXp(): Flow<Int> = dao.observeTotalXp()
 
     suspend fun recordAttempt(
         lessonId: String,
