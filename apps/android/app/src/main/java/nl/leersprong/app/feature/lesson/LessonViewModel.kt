@@ -2,8 +2,6 @@ package nl.leersprong.app.feature.lesson
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,12 +50,18 @@ data class LessonUiState(
     val nextReviewAtEpochMs: Long? = null,
 )
 
-class LessonViewModel(
-    application: Application,
-    lessonId: String,
-) : AndroidViewModel(application) {
+object LessonLaunchStore {
+    var selectedLessonId: String = LessonCatalog.G4_MULTIPLICATION
+        private set
+
+    fun select(lessonId: String) {
+        selectedLessonId = LessonCatalog.get(lessonId).id
+    }
+}
+
+class LessonViewModel(application: Application) : AndroidViewModel(application) {
     private val learningRepository = OfflineLearningRepository(application)
-    private val definition = LessonCatalog.get(lessonId)
+    private val definition = LessonCatalog.get(LessonLaunchStore.selectedLessonId)
     private val steps = definition.steps
     private val remedialSteps = definition.remedialSteps
     private var remedialStep: LessonStep? = null
@@ -220,15 +224,5 @@ class LessonViewModel(
     fun restart() {
         remedialStep = null
         _uiState.value = initialState()
-    }
-}
-
-class LessonViewModelFactory(
-    private val application: Application,
-    private val lessonId: String,
-) : ViewModelProvider.Factory {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return LessonViewModel(application, lessonId) as T
     }
 }
