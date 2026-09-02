@@ -91,7 +91,7 @@ export default function DashboardPage() {
         <Link className="kidBrand" href="/dashboard"><span>LS</span><strong>LeerSprong</strong></Link>
         <nav>
           <Link className="active" href="/dashboard">🏡 <span>Vandaag</span></Link>
-          <Link href="/lesson/multiplication">🗺️ <span>Mijn pad</span></Link>
+          <Link href="/learn">🗺️ <span>Leerwereld</span></Link>
           <Link href="/assessment">🎯 <span>Niveau</span></Link>
           <Link href="/onboarding">🙂 <span>Ik</span></Link>
         </nav>
@@ -135,6 +135,7 @@ export default function DashboardPage() {
             <article className="buddyCard"><div className="buddyTop"><span>🤖</span><div><small>AI LEERMAATJE</small><strong>Samen leren</strong></div></div><p>{tutorText}</p><Link href={focusSkill ? '/lesson/multiplication' : '/assessment'}>Kom, we doen er één →</Link></article>
             <article className="calmProgress"><div><span>🌱</span><div><small>Jouw groei</small><strong>{averageMastery}% beheersing</strong></div></div><div className="calmMeter"><i style={{width:`${averageMastery}%`}}/></div><p>{reviewCount ? `${reviewCount} herhaling${reviewCount === 1 ? '' : 'en'} staat klaar.` : 'Je bent bij met je herhalingen.'}</p></article>
             <article className="badgeShelf"><div className="sectionTitle"><div><span className="softEyebrow">TROTS OP</span><h3>Mijn badges</h3></div></div><div><span className={badgeCount > 0 ? 'earned' : ''}>⭐</span><span className={badgeCount > 1 ? 'earned' : ''}>🌟</span><span className={badgeCount > 2 ? 'earned' : ''}>🏆</span></div></article>
+            <article className="homeLanguageHint"><strong>🧭 Ontdek je leerwereld</strong><p>Kies een vak of bekijk waar je verder kunt bouwen.</p><Link href="/learn">Open alle vakken →</Link></article>
             {learner.supportLanguageEnabled && <article className="homeLanguageHint"><strong>🌍 Thuistaalhulp staat aan</strong><p>Bij moeilijke uitleg kan je extra taalsteun krijgen, terwijl Nederlands centraal blijft.</p></article>}
           </aside>
         </div>
