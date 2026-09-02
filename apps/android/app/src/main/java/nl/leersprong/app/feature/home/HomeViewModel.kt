@@ -28,6 +28,7 @@ data class HomeUiState(
     val currentLesson: String = "Tafels begrijpen",
     val pathStep: Int = 1,
     val pathTotal: Int = 4,
+    val nextReviewAtEpochMs: Long? = null,
     val coachMessage: String = "Begin met één korte tafeloefening. Daarna pas ik je volgende stap aan.",
     val tasks: List<HomeTask> = listOf(
         HomeTask("math", "Rekenen", "Tafels begrijpen", 0),
@@ -51,6 +52,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     xp = xp,
                     badges = reviews.count { it.masteryPercent >= 75 && it.evidenceCount >= 4 },
                     pathStep = if (mastery > 0) 2 else 1,
+                    nextReviewAtEpochMs = math?.nextReviewAtEpochMs,
                     coachMessage = when {
                         dueCount > 0 -> "Je hebt $dueCount slimme herhaling${if (dueCount == 1) "" else "en"} klaarstaan. We beginnen met wat nu het meeste helpt."
                         mastery > 0 -> "Mooi, je laatste tafelstand is $mastery%. Vandaag bouwen we daarop verder."
