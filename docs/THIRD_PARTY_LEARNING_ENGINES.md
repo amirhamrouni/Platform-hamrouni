@@ -13,7 +13,14 @@ LeerSprong NL uses or studies the following open-source projects. Code is only a
 ### Multiply
 - Repository: https://github.com/stephenWanjala/Multiply
 - License: MIT
-- Planned use: smart distractor and game-session patterns for mathematics. Code/assets are not copied unless explicitly attributed in the integrating change.
+- Use in LeerSprong: the smart-math distractor strategy is adapted for deterministic RekenChallenge lessons (off-by-one/off-by-two, doubling/halving and plausible offsets).
+- Copyright notice: Copyright (c) 2025 WANJALA STEPHEN. MIT license applies to adapted portions.
+
+### wordle-kt
+- Repository: https://github.com/opatry/wordle-kt
+- License: MIT
+- Use in LeerSprong: the duplicate-safe two-pass letter evaluation strategy is adapted for the Dutch `WoordChallenge`; Wordle branding, word lists and UI are not copied.
+- Copyright notice: Copyright (c) 2022 Olivier Patry. MIT license applies to adapted portions.
 
 ## Research/inspiration only
 
