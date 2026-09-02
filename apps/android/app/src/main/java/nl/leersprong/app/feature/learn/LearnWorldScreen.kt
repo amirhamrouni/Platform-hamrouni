@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import nl.leersprong.app.feature.lesson.LessonDefinition
-import nl.leersprong.app.feature.lesson.PlatformLessons
+import nl.leersprong.app.feature.lesson.LessonLibrary
 import nl.leersprong.app.ui.navigation.LearnerBottomBar
 import nl.leersprong.app.ui.navigation.LearnerTab
 
@@ -26,7 +26,7 @@ private val subjects = listOf(
     SubjectCardModel("Rekenen & Wiskunde", "Getallen, optellen, tafels, breuken, procenten, verhoudingen en data", Icons.Rounded.Calculate),
     SubjectCardModel("Nederlands", "Lezen, spelling, woordenschat, schrijven en spreken", Icons.Rounded.AutoStories),
     SubjectCardModel("Wereldoriëntatie", "Natuur, geschiedenis en aardrijkskunde", Icons.Rounded.Public),
-    SubjectCardModel("Engels", "Luisteren, spreken en woordenschat", Icons.Rounded.Language),
+    SubjectCardModel("Engels", "Luisteren, spreken, lezen en eenvoudige schrijfvaardigheid", Icons.Rounded.Language),
     SubjectCardModel("Burgerschap", "Samenleven, keuzes en maatschappij", Icons.Rounded.NaturePeople),
     SubjectCardModel("Digitale geletterdheid", "Media, informatie en veilig online", Icons.Rounded.Memory),
     SubjectCardModel("Kunst & Cultuur", "Maken, ontdekken en reflecteren", Icons.Rounded.Palette),
@@ -35,7 +35,7 @@ private val subjects = listOf(
 
 @Composable
 fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: (LearnerTab) -> Unit) {
-    val groupLessons = PlatformLessons.forGroup(learnerGroup)
+    val groupLessons = LessonLibrary.forGroup(learnerGroup)
     Scaffold(bottomBar = { LearnerBottomBar(selected = LearnerTab.Learn, onSelect = onTab) }) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).background(Color(0xFFF4F7FC)),
@@ -79,7 +79,8 @@ fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: 
 private fun LessonCard(lesson: LessonDefinition, onStart: () -> Unit) {
     val accent = when (lesson.subject) {
         "Nederlands" -> Color(0xFF7C3AED); "Engels" -> Color(0xFF0F8A83); "Wereldoriëntatie" -> Color(0xFF2E7D32)
-        "Burgerschap" -> Color(0xFFD05A2B); "Digitale geletterdheid" -> Color(0xFF4557C4); else -> Color(0xFF0A58CA)
+        "Burgerschap" -> Color(0xFFD05A2B); "Digitale geletterdheid" -> Color(0xFF4557C4); "Kunst & Cultuur" -> Color(0xFFE88A16)
+        "NT2 / Thuistaalhulp" -> Color(0xFF8D4AC7); else -> Color(0xFF0A58CA)
     }
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -98,5 +99,6 @@ private fun LessonCard(lesson: LessonDefinition, onStart: () -> Unit) {
 
 private fun subjectIcon(subject: String): ImageVector = when (subject) {
     "Nederlands" -> Icons.Rounded.AutoStories; "Engels" -> Icons.Rounded.Language; "Wereldoriëntatie" -> Icons.Rounded.Public
-    "Burgerschap" -> Icons.Rounded.NaturePeople; "Digitale geletterdheid" -> Icons.Rounded.Memory; else -> Icons.Rounded.Calculate
+    "Burgerschap" -> Icons.Rounded.NaturePeople; "Digitale geletterdheid" -> Icons.Rounded.Memory; "Kunst & Cultuur" -> Icons.Rounded.Palette
+    "NT2 / Thuistaalhulp" -> Icons.Rounded.RecordVoiceOver; else -> Icons.Rounded.Calculate
 }
