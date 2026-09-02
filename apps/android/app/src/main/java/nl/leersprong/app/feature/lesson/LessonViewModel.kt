@@ -11,7 +11,10 @@ import kotlinx.coroutines.launch
 import nl.leersprong.app.data.OfflineLearningRepository
 import kotlin.math.roundToInt
 
-enum class LessonInteractionType { MultipleChoice, Ordering, ListenChoose }
+private const val LESSON_ID = "g4-math-multiplication-foundations-v1"
+private const val SKILL_ID = "g4-math-multiplication-foundations"
+
+enum class LessonInteractionType { MultipleChoice, FillBlank, Ordering, ListenChoose }
 
 data class LessonOption(val id: String, val label: String)
 
@@ -20,8 +23,9 @@ data class LessonStep(
     val title: String,
     val prompt: String,
     val interaction: LessonInteractionType,
-    val options: List<LessonOption>,
+    val options: List<LessonOption> = emptyList(),
     val correctOptionId: String? = null,
+    val acceptedAnswers: List<String> = emptyList(),
     val correctOrder: List<String> = emptyList(),
     val speakText: String? = null,
     val hint: String,
@@ -29,9 +33,10 @@ data class LessonStep(
 )
 
 data class LessonUiState(
-    val lessonTitle: String = "Optellen tot 20",
+    val lessonTitle: String = "Tafels begrijpen",
     val currentIndex: Int = 0,
     val selectedOptionId: String? = null,
+    val textAnswer: String = "",
     val order: List<String> = emptyList(),
     val checked: Boolean = false,
     val isCorrect: Boolean? = null,
@@ -49,54 +54,97 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
 
     private val steps = listOf(
         LessonStep(
-            id = "sum-8-7",
-            title = "Slim optellen",
-            prompt = "Wat is 8 + 7?",
+            id = "g4-mul-01",
+            title = "Gelijke groepjes",
+            prompt = "Er staan 3 mandjes met in elk mandje 4 appels. Welke som past hierbij?",
             interaction = LessonInteractionType.MultipleChoice,
-            options = listOf(LessonOption("13", "13"), LessonOption("15", "15"), LessonOption("16", "16")),
-            correctOptionId = "15",
-            hint = "Maak eerst 10: 8 + 2 = 10. Hoeveel blijft er dan van 7 over?",
-            explanation = "Goed gezien: 8 + 7 = 15. Splits 7 in 2 en 5: 8 + 2 + 5 = 15.",
+            options = listOf(LessonOption("add", "3 + 4"), LessonOption("mul", "3 × 4"), LessonOption("sub", "4 − 3")),
+            correctOptionId = "mul",
+            hint = "Kijk naar het aantal gelijke groepjes en hoeveel er in elk groepje zitten.",
+            explanation = "3 gelijke groepjes van 4 schrijf je als 3 × 4.",
         ),
         LessonStep(
-            id = "listen-ten-plus-four",
+            id = "g4-mul-02",
+            title = "Herhaald optellen",
+            prompt = "Vul in: 5 groepjes van 2 is samen ___.",
+            interaction = LessonInteractionType.FillBlank,
+            acceptedAnswers = listOf("10"),
+            hint = "Tel 2 vijf keer bij elkaar op.",
+            explanation = "5 × 2 = 10. Je kunt ook 2 + 2 + 2 + 2 + 2 rekenen.",
+        ),
+        LessonStep(
+            id = "g4-mul-03",
             title = "Luister en kies",
-            prompt = "Luister naar de som en kies het juiste antwoord.",
+            prompt = "Luister naar de keersom en kies het juiste antwoord.",
             interaction = LessonInteractionType.ListenChoose,
-            options = listOf(LessonOption("12", "12"), LessonOption("14", "14"), LessonOption("16", "16")),
-            correctOptionId = "14",
-            speakText = "Tien plus vier. Wat is het antwoord?",
-            hint = "Je hoort: tien plus vier.",
-            explanation = "Tien plus vier is veertien.",
+            options = listOf(LessonOption("20", "20"), LessonOption("24", "24"), LessonOption("28", "28")),
+            correctOptionId = "24",
+            speakText = "Wat is vier keer zes?",
+            hint = "Vier gelijke groepjes van zes.",
+            explanation = "4 groepjes van 6 zijn samen 24.",
         ),
         LessonStep(
-            id = "order-strategy",
+            id = "g4-mul-04",
             title = "Zet de stappen goed",
-            prompt = "Zet de rekenstappen voor 9 + 6 in de juiste volgorde.",
+            prompt = "Zet de stappen in de goede volgorde om 3 × 5 uit te rekenen.",
             interaction = LessonInteractionType.Ordering,
             options = listOf(
-                LessonOption("a", "9 + 1 = 10"),
-                LessonOption("b", "Splits 6 in 1 en 5"),
-                LessonOption("c", "10 + 5 = 15"),
+                LessonOption("sum", "Tel alles bij elkaar"),
+                LessonOption("groups", "Maak 3 gelijke groepjes"),
+                LessonOption("fill", "Doe 5 in elk groepje"),
             ),
-            correctOrder = listOf("b", "a", "c"),
-            hint = "Denk eerst: welk deel van 6 heb je nodig om 9 naar 10 te brengen?",
-            explanation = "Precies. Eerst splits je 6, daarna maak je 10 en tenslotte tel je de rest erbij.",
+            correctOrder = listOf("groups", "fill", "sum"),
+            hint = "Begin met hoeveel groepjes je nodig hebt.",
+            explanation = "Een keersom beschrijft eerst hoeveel groepjes je hebt en daarna hoeveel er in elk groepje zitten.",
         ),
         LessonStep(
-            id = "sum-7-6",
-            title = "Zelf proberen",
-            prompt = "Wat is 7 + 6?",
+            id = "g4-mul-05",
+            title = "Wisselregel",
+            prompt = "Welke twee sommen hebben dezelfde uitkomst?",
             interaction = LessonInteractionType.MultipleChoice,
-            options = listOf(LessonOption("12", "12"), LessonOption("13", "13"), LessonOption("14", "14")),
-            correctOptionId = "13",
-            hint = "7 heeft nog 3 nodig om 10 te worden.",
-            explanation = "Juist: 7 + 3 + 3 = 13.",
+            options = listOf(
+                LessonOption("swap", "3 × 4 en 4 × 3"),
+                LessonOption("plus1", "3 × 4 en 3 + 4"),
+                LessonOption("plus2", "4 × 3 en 4 + 3"),
+            ),
+            correctOptionId = "swap",
+            hint = "Bij vermenigvuldigen kun je de factoren omwisselen.",
+            explanation = "3 × 4 en 4 × 3 zijn allebei 12. De groepjes zijn anders verdeeld, maar het totaal is gelijk.",
+        ),
+        LessonStep(
+            id = "g4-mul-06",
+            title = "Gebruik wat je weet",
+            prompt = "Je weet dat 5 × 6 = 30. Wat is dan 6 × 5?",
+            interaction = LessonInteractionType.FillBlank,
+            acceptedAnswers = listOf("30"),
+            hint = "Denk aan de wisselregel.",
+            explanation = "Bij vermenigvuldigen mag je de factoren omwisselen: 5 × 6 = 6 × 5.",
+        ),
+        LessonStep(
+            id = "g4-mul-07",
+            title = "Verhaalsom",
+            prompt = "Een klas heeft 7 tafels. Aan elke tafel zitten 4 kinderen. Hoeveel kinderen zijn dat?",
+            interaction = LessonInteractionType.MultipleChoice,
+            options = listOf(LessonOption("11", "11"), LessonOption("24", "24"), LessonOption("28", "28")),
+            correctOptionId = "28",
+            hint = "Je hebt 7 gelijke groepjes van 4.",
+            explanation = "7 gelijke groepjes van 4: 7 × 4 = 28.",
+        ),
+        LessonStep(
+            id = "g4-mul-08",
+            title = "Slimme strategie",
+            prompt = "Een doos heeft 8 rijen met 6 stickers. Hoeveel stickers zijn er?",
+            interaction = LessonInteractionType.FillBlank,
+            acceptedAnswers = listOf("48"),
+            hint = "Je kunt bijvoorbeeld 4 × 6 uitrekenen en daarna verdubbelen.",
+            explanation = "8 × 6 = 48. Je kunt bijvoorbeeld 4 × 6 verdubbelen.",
         ),
     )
 
-    private val _uiState = MutableStateFlow(LessonUiState(order = steps.first().options.map { it.id }))
+    private val _uiState = MutableStateFlow(initialState())
     val uiState: StateFlow<LessonUiState> = _uiState.asStateFlow()
+
+    private fun initialState() = LessonUiState(order = steps.first().options.map { it.id })
 
     fun currentStep(): LessonStep = steps[_uiState.value.currentIndex.coerceIn(0, steps.lastIndex)]
     fun stepCount(): Int = steps.size
@@ -104,6 +152,11 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
     fun selectOption(id: String) {
         if (_uiState.value.checked) return
         _uiState.update { it.copy(selectedOptionId = id) }
+    }
+
+    fun updateTextAnswer(value: String) {
+        if (_uiState.value.checked) return
+        _uiState.update { it.copy(textAnswer = value) }
     }
 
     fun moveOrderItem(id: String, delta: Int) {
@@ -129,6 +182,7 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
         val correct = when (step.interaction) {
             LessonInteractionType.MultipleChoice,
             LessonInteractionType.ListenChoose -> state.selectedOptionId == step.correctOptionId
+            LessonInteractionType.FillBlank -> step.acceptedAnswers.any { it.equals(state.textAnswer.trim(), ignoreCase = true) }
             LessonInteractionType.Ordering -> state.order == step.correctOrder
         }
         val xpDelta = if (correct) 20 else 5
@@ -143,8 +197,8 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
         }
         viewModelScope.launch {
             learningRepository.recordAttempt(
-                lessonId = "math-addition-to-20",
-                skillId = "math-addition-foundations",
+                lessonId = LESSON_ID,
+                skillId = SKILL_ID,
                 activityId = step.id,
                 correct = correct,
                 hintsUsed = if (state.showHint) 1 else 0,
@@ -166,6 +220,7 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
             it.copy(
                 currentIndex = nextIndex,
                 selectedOptionId = null,
+                textAnswer = "",
                 order = next.options.map { option -> option.id },
                 checked = false,
                 isCorrect = null,
@@ -187,7 +242,7 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update { it.copy(completed = true, masteryPercent = mastery, nextReviewAtEpochMs = nextReview) }
         viewModelScope.launch {
             learningRepository.updateReview(
-                skillId = "math-addition-foundations",
+                skillId = SKILL_ID,
                 masteryPercent = mastery,
                 evidenceCount = steps.size,
                 nextReviewAtEpochMs = nextReview,
@@ -196,7 +251,6 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun restart() {
-        val first = steps.first()
-        _uiState.value = LessonUiState(order = first.options.map { it.id })
+        _uiState.value = initialState()
     }
 }
