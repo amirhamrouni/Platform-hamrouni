@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import nl.leersprong.app.data.OfflineLearningRepository
-import nl.leersprong.app.feature.lesson.PlatformLessons
+import nl.leersprong.app.feature.lesson.LessonLibrary
 import nl.leersprong.app.profile.LearnerProfileRepository
 import java.util.Calendar
 
@@ -29,7 +29,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     init { viewModelScope.launch {
         combine(repository.observeReviews(), repository.observeTotalXp(), repository.observePracticeTimestamps(), profileRepository.profile) { reviews, xp, practiceTimestamps, profile ->
             val now = System.currentTimeMillis()
-            val groupLessons = PlatformLessons.forGroup(profile.group)
+            val groupLessons = LessonLibrary.forGroup(profile.group)
             val firstLesson = groupLessons.firstOrNull()
             val groupSkillIds = groupLessons.mapTo(mutableSetOf()) { it.skillId }
             val groupReviews = reviews.filter { it.skillId in groupSkillIds }
