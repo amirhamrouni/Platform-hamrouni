@@ -56,8 +56,6 @@ fun ProgressRoute(
     viewModel: HomeViewModel = viewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val math = state.tasks.firstOrNull { it.id == "math" }
-    val review = state.tasks.firstOrNull { it.id == "review" }
     val context = LocalContext.current
     var reminderScheduled by remember { mutableStateOf(false) }
 
@@ -85,29 +83,34 @@ fun ProgressRoute(
         ) {
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Text("VOORTGANG", color = Color(0xFF607089), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                    Text("VOORTGANG · GROEP ${state.group}", color = Color(0xFF607089), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
                     Text("Dit heb je echt opgebouwd", color = Color(0xFF062A70), fontWeight = FontWeight.Black, fontSize = 30.sp)
-                    Text("Alle cijfers hieronder komen uit lokaal opgeslagen oefenbewijzen.", color = Color(0xFF65758B))
+                    Text("Alle cijfers komen uit lokaal opgeslagen oefenbewijzen; geen demo-scores.", color = Color(0xFF65758B))
                 }
             }
             item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     SummaryCard(Modifier.weight(1f), "XP", state.xp.toString())
+                    SummaryCard(Modifier.weight(1f), "Streak", "${state.streakDays}d")
                     SummaryCard(Modifier.weight(1f), "Badges", state.badges.toString())
                 }
             }
             item {
+                Text("Jouw leerbewijs", fontWeight = FontWeight.Black, fontSize = 20.sp, modifier = Modifier.padding(top = 8.dp))
+            }
+            items(state.tasks.filter { it.id != "review" }, key = { "evidence-${it.id}" }) { task ->
                 EvidenceCard(
-                    title = "Rekenen · Tafels begrijpen",
-                    subtitle = math?.subtitle ?: "Nog geen bewijs",
-                    progress = math?.progress ?: 0,
+                    title = task.title,
+                    subtitle = task.subtitle,
+                    progress = task.progress,
                 )
             }
             item {
+                val reviewTask = state.tasks.firstOrNull { it.id == "review" }
                 EvidenceCard(
                     title = "Slim herhalen",
-                    subtitle = review?.subtitle ?: "Nog geen review gepland",
-                    progress = review?.progress ?: 0,
+                    subtitle = reviewTask?.subtitle ?: "Nog geen review gepland",
+                    progress = reviewTask?.progress ?: 0,
                 )
             }
             item {
@@ -124,8 +127,8 @@ fun ProgressRoute(
                         Text(
                             when {
                                 reminderScheduled -> "Herinnering staat aan voor $reviewLabel."
-                                reviewLabel != null -> "Je volgende slimme herhaling staat gepland voor $reviewLabel. Je kiest zelf of je een melding wilt."
-                                else -> "Na je eerste afgeronde les kan je hier een herinnering instellen."
+                                reviewLabel != null -> "Je volgende geplande herhaling is $reviewLabel. Jij kiest of je een melding wilt."
+                                else -> "Na een afgeronde les met reviewplanning kan je hier een melding inschakelen."
                             },
                             color = Color(0xFF53657D),
                         )
@@ -153,18 +156,6 @@ fun ProgressRoute(
                     }
                 }
             }
-            item {
-                Text("Jouw leerbewijs", fontWeight = FontWeight.Black, fontSize = 20.sp, modifier = Modifier.padding(top = 8.dp))
-            }
-            items(state.tasks, key = { "evidence-${it.id}" }) { task ->
-                Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                    Column(modifier = Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(task.title, fontWeight = FontWeight.Black)
-                        Text(task.subtitle, color = Color(0xFF69788D), fontSize = 13.sp)
-                        Text("${task.progress}%", color = Color(0xFF168A4B), fontWeight = FontWeight.ExtraBold)
-                    }
-                }
-            }
         }
     }
 }
@@ -172,9 +163,9 @@ fun ProgressRoute(
 @Composable
 private fun SummaryCard(modifier: Modifier, label: String, value: String) {
     Card(modifier = modifier, shape = RoundedCornerShape(20.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Text(label, color = Color(0xFF69788D), fontSize = 12.sp)
-            Text(value, color = Color(0xFF062A70), fontWeight = FontWeight.Black, fontSize = 30.sp)
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(label, color = Color(0xFF69788D), fontSize = 11.sp)
+            Text(value, color = Color(0xFF062A70), fontWeight = FontWeight.Black, fontSize = 24.sp)
         }
     }
 }
@@ -191,6 +182,7 @@ private fun EvidenceCard(title: String, subtitle: String, progress: Int) {
                 color = Color(0xFF22B66D),
                 trackColor = Color(0xFFE4EAF1),
             )
+            Text("$progress% beheersing", color = Color(0xFF168A4B), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
         }
     }
 }
