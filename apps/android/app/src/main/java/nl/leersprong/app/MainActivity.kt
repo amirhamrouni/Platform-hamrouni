@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nl.leersprong.app.diagnostic.DiagnosticRoute
+import nl.leersprong.app.engagement.EngagementHubScreen
 import nl.leersprong.app.feature.buddy.BuddyRoute
 import nl.leersprong.app.feature.home.LearnerHomeRoute
 import nl.leersprong.app.feature.learn.LearnWorldScreen
@@ -28,7 +29,7 @@ import nl.leersprong.app.profile.ProfileViewModel
 import nl.leersprong.app.ui.navigation.LearnerTab
 import nl.leersprong.app.ui.theme.LeerSprongTheme
 
-private enum class AppDestination { Home, Learn, Buddy, Progress, Profile, Lesson }
+private enum class AppDestination { Home, Learn, Buddy, Progress, Profile, Lesson, Play }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,6 +87,7 @@ class MainActivity : ComponentActivity() {
                 when (destination) {
                     AppDestination.Home -> LearnerHomeRoute(
                         onContinue = { launchLesson(recommendedLessonId) },
+                        onPlay = { destination = AppDestination.Play },
                         onTab = ::selectTab,
                     )
                     AppDestination.Learn -> LearnWorldScreen(
@@ -105,6 +107,11 @@ class MainActivity : ComponentActivity() {
                         onDone = { destination = AppDestination.Home },
                     )
                     AppDestination.Lesson -> LessonRoute(onBack = { destination = AppDestination.Learn })
+                    AppDestination.Play -> EngagementHubScreen(
+                        learnerGroup = currentProfile.group,
+                        onStartLesson = ::launchLesson,
+                        onBack = { destination = AppDestination.Home },
+                    )
                 }
             }
         }

@@ -1,6 +1,7 @@
 package nl.leersprong.app.feature.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SmartToy
+import androidx.compose.material.icons.rounded.SportsEsports
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -50,6 +52,7 @@ private val WarmYellow = Color(0xFFFFC62E)
 @Composable
 fun LearnerHomeRoute(
     onContinue: () -> Unit,
+    onPlay: () -> Unit,
     onTab: (LearnerTab) -> Unit,
     viewModel: HomeViewModel = viewModel(),
 ) {
@@ -88,6 +91,24 @@ fun LearnerHomeRoute(
                     MetricCard(Modifier.weight(1f), "XP", state.xp.toString(), Icons.Rounded.Star)
                     MetricCard(Modifier.weight(1f), "Streak", state.streakDays.toString(), Icons.Rounded.LocalFireDepartment)
                     MetricCard(Modifier.weight(1f), "Badges", state.badges.toString(), Icons.Rounded.EmojiEvents)
+                }
+            }
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp).clickable(onClick = onPlay),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF132F74)),
+                ) {
+                    Row(modifier = Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Box(Modifier.size(58.dp).background(WarmYellow, RoundedCornerShape(18.dp)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Rounded.SportsEsports, contentDescription = null, tint = DeepBlue, modifier = Modifier.size(34.dp))
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Speelplein", color = Color.White, fontWeight = FontWeight.Black, fontSize = 21.sp)
+                            Text("Memory, Quiz Arena, Dagmissies & challenges", color = Color(0xFFD8E5FF), fontSize = 13.sp)
+                        }
+                        Text("→", color = Color.White, fontWeight = FontWeight.Black, fontSize = 24.sp)
+                    }
                 }
             }
             item {
