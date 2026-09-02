@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import nl.leersprong.app.data.OfflineLearningRepository
+import nl.leersprong.app.profile.LearnerProfileRepository
 import java.util.Calendar
 
 private const val MATH_SKILL_ID = "g4-math-multiplication-foundations"
@@ -23,6 +24,8 @@ data class HomeTask(
 data class HomeUiState(
     val learnerName: String = "Leerling",
     val group: Int = 4,
+    val homeLanguage: String = "Nederlands",
+    val supportLanguageEnabled: Boolean = false,
     val streakDays: Int = 0,
     val xp: Int = 0,
     val badges: Int = 0,
@@ -39,6 +42,7 @@ data class HomeUiState(
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = OfflineLearningRepository(application)
+    private val profileRepository = LearnerProfileRepository(application)
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -48,12 +52,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 repository.observeReviews(),
                 repository.observeTotalXp(),
                 repository.observePracticeTimestamps(),
-            ) { reviews, xp, practiceTimestamps ->
+                profileRepository.profile,
+            ) { reviews, xp, practiceTimestamps, profile ->
                 val now = System.currentTimeMillis()
                 val math = reviews.firstOrNull { it.skillId == MATH_SKILL_ID }
                 val dueCount = reviews.count { it.nextReviewAtEpochMs <= now }
                 val mastery = math?.masteryPercent ?: 0
                 HomeUiState(
+                    learnerName = profile.name.ifBlank { "Leerling" },
+                    group = profile.group,
+                    homeLanguage = profile.homeLanguage,
+                    supportLanguageEnabled = profile.supportLanguageEnabled,
                     streakDays = calculatePracticeStreak(practiceTimestamps, now),
                     xp = xp,
                     badges = reviews.count { it.masteryPercent >= 75 && it.evidenceCount >= 4 },
@@ -62,6 +71,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     coachMessage = when {
                         dueCount > 0 -> "Je hebt $dueCount slimme herhaling${if (dueCount == 1) "" else "en"} klaarstaan. We beginnen met wat nu het meeste helpt."
                         mastery > 0 -> "Mooi, je laatste tafelstand is $mastery%. Vandaag bouwen we daarop verder."
+                        profile.supportLanguageEnabled -> "We starten in het Nederlands. Als iets moeilijk is, kan ik extra steun geven in ${profile.homeLanguage}."
                         else -> "Begin met één korte tafeloefening. Daarna pas ik je volgende stap aan."
                     },
                     tasks = listOf(
