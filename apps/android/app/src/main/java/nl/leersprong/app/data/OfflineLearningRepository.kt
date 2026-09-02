@@ -12,6 +12,7 @@ class OfflineLearningRepository(context: Context) {
 
     fun observeReviews(): Flow<List<SkillReviewEntity>> = dao.observeReviews()
     fun observeTotalXp(): Flow<Int> = dao.observeTotalXp()
+    fun observePracticeTimestamps(): Flow<List<Long>> = dao.observePracticeTimestamps()
 
     suspend fun recordAttempt(
         lessonId: String,
