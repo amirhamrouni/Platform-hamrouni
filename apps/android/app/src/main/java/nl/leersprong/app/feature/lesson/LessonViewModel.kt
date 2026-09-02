@@ -55,13 +55,13 @@ object LessonLaunchStore {
         private set
 
     fun select(lessonId: String) {
-        selectedLessonId = LessonCatalog.get(lessonId).id
+        selectedLessonId = AllLessons.get(lessonId).id
     }
 }
 
 class LessonViewModel(application: Application) : AndroidViewModel(application) {
     private val learningRepository = OfflineLearningRepository(application)
-    private val definition = LessonCatalog.get(LessonLaunchStore.selectedLessonId)
+    private val definition = AllLessons.get(LessonLaunchStore.selectedLessonId)
     private val steps = definition.steps
     private val remedialSteps = definition.remedialSteps
     private var remedialStep: LessonStep? = null
