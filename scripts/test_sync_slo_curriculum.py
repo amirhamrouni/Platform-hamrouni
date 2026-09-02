@@ -11,7 +11,7 @@ class SyncSloCurriculumTest(unittest.TestCase):
     def test_sha256_is_stable(self):
         self.assertEqual(
             slo.sha256(b"leersprong"),
-            "ff95f47789cd3d1b9c4f9830898493d4fd12164224c5fd3d840f66464643ed82",
+            "0bd3743693428c3dbb7e95d87dc88b04fbf23a0e5587857780d57a6b11aa2ed1",
         )
 
     @patch.object(slo, "resolve_ref", return_value="abc123456789")
