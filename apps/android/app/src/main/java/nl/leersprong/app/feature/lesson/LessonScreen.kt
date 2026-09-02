@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -213,6 +214,34 @@ private fun LessonScreen(
                         )
                     }
 
+                    LessonInteractionType.WordPattern -> {
+                        val target = step.targetWord.orEmpty()
+                        OutlinedTextField(
+                            value = state.textAnswer,
+                            onValueChange = { raw ->
+                                val clean = raw.filter(Char::isLetter).take(target.length)
+                                onTextAnswer(clean)
+                            },
+                            enabled = !state.checked,
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Typ ${target.length} letters") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                            singleLine = true,
+                        )
+                        Text(
+                            "${WordPatternEvaluator.normalize(state.textAnswer).length}/${target.length} letters",
+                            color = Color(0xFF718096),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp,
+                        )
+                        if (state.checked && target.isNotBlank()) {
+                            val guess = WordPatternEvaluator.normalize(state.textAnswer)
+                            if (guess.length == WordPatternEvaluator.normalize(target).length) {
+                                WordPatternFeedbackRow(WordPatternEvaluator.evaluate(guess, target))
+                            }
+                        }
+                    }
+
                     LessonInteractionType.Ordering -> state.order.forEachIndexed { index, id ->
                         val option = step.options.first { it.id == id }
                         DraggableOrderingCard(
@@ -259,6 +288,10 @@ private fun LessonScreen(
             LessonInteractionType.ListenChoose -> state.selectedOptionId != null
             LessonInteractionType.FillBlank -> state.textAnswer.isNotBlank()
             LessonInteractionType.Ordering -> state.order.isNotEmpty()
+            LessonInteractionType.WordPattern -> {
+                val targetLength = step.targetWord?.let(WordPatternEvaluator::normalize)?.length ?: 0
+                targetLength > 0 && WordPatternEvaluator.normalize(state.textAnswer).length == targetLength
+            }
         }
         Button(
             onClick = if (state.checked) onContinue else onCheck,
@@ -268,6 +301,43 @@ private fun LessonScreen(
             colors = ButtonDefaults.buttonColors(containerColor = if (state.checked) LessonGreen else LessonYellow, contentColor = if (state.checked) Color.White else Color(0xFF2F2700)),
         ) {
             Text(if (state.checked) "Volgende" else "Controleer", fontSize = 17.sp, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+private fun WordPatternFeedbackRow(feedback: List<LetterFeedback>) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        feedback.forEach { item ->
+            val background = when (item.match) {
+                LetterMatch.Correct -> LessonGreen
+                LetterMatch.Present -> LessonYellow
+                LetterMatch.Absent -> Color(0xFFD7DFEA)
+            }
+            val label = when (item.match) {
+                LetterMatch.Correct -> "${item.letter.uppercaseChar()} juiste plek"
+                LetterMatch.Present -> "${item.letter.uppercaseChar()} zit in het woord, andere plek"
+                LetterMatch.Absent -> "${item.letter.uppercaseChar()} niet in het woord"
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(42.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(background)
+                    .semantics { contentDescription = label },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    item.letter.uppercaseChar().toString(),
+                    fontWeight = FontWeight.Black,
+                    color = if (item.match == LetterMatch.Absent) LessonBlue else Color.White,
+                    fontSize = 15.sp,
+                )
+            }
         }
     }
 }
