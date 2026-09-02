@@ -29,9 +29,15 @@ object MathChallengeLessons {
                 "$a + $b = ?" to a + b
             }
             3 -> {
-                val a = random.nextInt(6, 20)
-                val b = random.nextInt(1, a)
-                if (index % 2 == 0) "$a − $b = ?" to a - b else "$a + $b = ?" to a + b
+                if (index % 2 == 0) {
+                    val a = random.nextInt(8, 21)
+                    val b = random.nextInt(1, a)
+                    "$a − $b = ?" to a - b
+                } else {
+                    val a = random.nextInt(5, 16)
+                    val b = random.nextInt(1, 21 - a)
+                    "$a + $b = ?" to a + b
+                }
             }
             4 -> {
                 val a = random.nextInt(2, 11)
@@ -55,10 +61,10 @@ object MathChallengeLessons {
                 "$count × ${unit * factor} = ?" to count * unit * factor
             }
             else -> {
-                val values = List(3) { random.nextInt(4, 16) }
-                val sum = values.sum()
-                val rounded = sum / 3
-                "Gemiddelde van ${values.joinToString(", ")} (naar beneden afgerond) = ?" to rounded
+                val average = random.nextInt(6, 16)
+                val delta = random.nextInt(1, 5)
+                val values = listOf(average - delta, average, average + delta)
+                "Gemiddelde van ${values.joinToString(", ")} = ?" to average
             }
         }
 
