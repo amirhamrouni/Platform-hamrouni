@@ -1,7 +1,7 @@
 package nl.leersprong.app.feature.lesson
 
 object AllLessons {
-    val lessons: List<LessonDefinition> = LessonCatalog.lessons + listOf(
+    val lessons: List<LessonDefinition> = LessonCatalog.lessons + CreativeNt2Lessons.lessons + listOf(
         group1(), group2(), group3(), group5(), group6(), group7(), group8(),
     )
 
@@ -78,39 +78,38 @@ object AllLessons {
             LessonStep("g6-04", "Geld", "€12,50 + €2,75 = ___.", LessonInteractionType.FillBlank, "decimals", acceptedAnswers = listOf("15,25", "15.25"), hint = "Tel eerst euro's en centen.", explanation = "Samen is dat €15,25."),
         ),
         remedialSteps = mapOf(
-            "percent" to LessonStep("g6-r1", "Procent als deel", "50% van 10 = ?", LessonInteractionType.FillBlank, "percent", acceptedAnswers = listOf("5"), hint = "Neem de helft.", explanation = "50% van 10 is 5."),
-            "decimals" to LessonStep("g6-r2", "Tienden", "0,7 of 0,4: welke is groter?", LessonInteractionType.MultipleChoice, "decimals", listOf(LessonOption("0,7","0,7"), LessonOption("0,4","0,4")), "0,7", hint = "Zeven tienden is meer dan vier tienden.", explanation = "0,7 is groter."),
+            "decimals" to LessonStep("g6-r1", "Tienden", "0,5 = hoeveel tienden?", LessonInteractionType.FillBlank, "decimals", acceptedAnswers = listOf("5"), hint = "Kijk naar de eerste plek na de komma.", explanation = "0,5 is vijf tienden."),
+            "percent" to LessonStep("g6-r2", "De helft", "50% van 8 = ?", LessonInteractionType.FillBlank, "percent", acceptedAnswers = listOf("4"), hint = "Neem de helft.", explanation = "De helft van 8 is 4."),
         ),
     )
 
     private fun group7() = LessonDefinition(
-        id = "g7-math-ratios-v1", skillId = "g7-math-ratios", title = "Verhoudingen slim gebruiken",
-        subject = "Rekenen & Wiskunde", group = 7, estimatedMinutes = 11,
+        id = "g7-math-ratio-v1", skillId = "g7-math-ratio", title = "Verhoudingen oplossen",
+        subject = "Rekenen & Wiskunde", group = 7, estimatedMinutes = 12,
         steps = listOf(
-            LessonStep("g7-01", "Verhouding", "2 rode kralen op 3 blauwe. Hoe schrijf je rood : blauw?", LessonInteractionType.MultipleChoice, "ratio", listOf(LessonOption("2:3","2:3"), LessonOption("3:2","3:2"), LessonOption("5:1","5:1")), "2:3", hint = "Schrijf in dezelfde volgorde als de vraag.", explanation = "Rood : blauw = 2 : 3."),
-            LessonStep("g7-02", "Opschalen", "3 flessen kosten €6. Wat kosten 6 flessen?", LessonInteractionType.FillBlank, "scale", acceptedAnswers = listOf("12", "€12"), hint = "6 is twee keer 3.", explanation = "Dus de prijs wordt ook twee keer: €12."),
-            LessonStep("g7-03", "Schaal", "Op een kaart is 1 cm = 5 km. Hoeveel km is 4 cm?", LessonInteractionType.FillBlank, "scale", acceptedAnswers = listOf("20"), hint = "4 × 5.", explanation = "4 cm staat voor 20 km."),
-            LessonStep("g7-04", "Proportioneel", "Welke tabel klopt bij 2 broodjes = €5?", LessonInteractionType.MultipleChoice, "proportion", listOf(LessonOption("a","4 broodjes = €10"), LessonOption("b","4 broodjes = €7")), "a", hint = "Verdubbel je het aantal, dan verdubbelt de prijs.", explanation = "4 broodjes kosten €10."),
+            LessonStep("g7-01", "Verhouding", "Voor 2 glazen limonade gebruik je 1 lepel siroop. Hoeveel lepels voor 6 glazen?", LessonInteractionType.MultipleChoice, "ratio", listOf(LessonOption("2","2"), LessonOption("3","3"), LessonOption("6","6")), "3", hint = "6 is drie keer 2.", explanation = "Dus je hebt drie keer 1 lepel nodig: 3."),
+            LessonStep("g7-02", "Schaal", "Op een kaart is 1 cm = 5 km. 4 cm is __ km.", LessonInteractionType.FillBlank, "scale", acceptedAnswers = listOf("20"), hint = "4 × 5.", explanation = "4 cm staat voor 20 km."),
+            LessonStep("g7-03", "Procent", "20% van 50 = ___.", LessonInteractionType.FillBlank, "percent", acceptedAnswers = listOf("10"), hint = "10% van 50 is 5.", explanation = "20% is twee keer 10%, dus 10."),
+            LessonStep("g7-04", "Route", "Zet de aanpak voor 3 : 5 = 12 : ? in volgorde.", LessonInteractionType.Ordering, "ratio-strategy", options = listOf(LessonOption("factor","Van 3 naar 12 is ×4"), LessonOption("apply","Doe 5 × 4"), LessonOption("answer","Antwoord 20")), correctOrder = listOf("factor","apply","answer"), hint = "Gebruik dezelfde factor aan beide kanten.", explanation = "3×4=12, dus 5×4=20."),
         ),
         remedialSteps = mapOf(
-            "ratio" to LessonStep("g7-r1", "Lees de volgorde", "1 kat en 2 honden. Kat : hond = ?", LessonInteractionType.MultipleChoice, "ratio", listOf(LessonOption("1:2","1:2"), LessonOption("2:1","2:1")), "1:2", hint = "Kat staat eerst.", explanation = "Kat : hond = 1 : 2."),
-            "scale" to LessonStep("g7-r2", "Eenvoudig opschalen", "2 × 4 = ?", LessonInteractionType.FillBlank, "scale", acceptedAnswers = listOf("8"), hint = "Twee groepjes van vier.", explanation = "2 × 4 = 8."),
+            "ratio" to LessonStep("g7-r1", "Zelfde factor", "1 zak kost €2. Wat kosten 3 zakken?", LessonInteractionType.FillBlank, "ratio", acceptedAnswers = listOf("6", "€6"), hint = "3 × €2.", explanation = "Drie zakken kosten €6."),
+            "scale" to LessonStep("g7-r2", "Kaartschaal", "1 cm = 2 km. 2 cm = ? km", LessonInteractionType.FillBlank, "scale", acceptedAnswers = listOf("4"), hint = "2 × 2.", explanation = "Dat is 4 km."),
         ),
     )
 
     private fun group8() = LessonDefinition(
-        id = "g8-math-percent-data-v1", skillId = "g8-math-percent-data", title = "Procenten & data",
+        id = "g8-math-data-v1", skillId = "g8-math-data", title = "Data & procenten gebruiken",
         subject = "Rekenen & Wiskunde", group = 8, estimatedMinutes = 12,
         steps = listOf(
-            LessonStep("g8-01", "Korting", "Een jas kost €80 en heeft 25% korting. Hoeveel euro korting?", LessonInteractionType.FillBlank, "percent", acceptedAnswers = listOf("20", "€20"), hint = "25% is een kwart.", explanation = "Een kwart van €80 is €20."),
-            LessonStep("g8-02", "Nieuwe prijs", "De jas van €80 krijgt €20 korting. Nieuwe prijs?", LessonInteractionType.FillBlank, "percent", acceptedAnswers = listOf("60", "€60"), hint = "80 − 20.", explanation = "De nieuwe prijs is €60."),
-            LessonStep("g8-03", "Gemiddelde", "Wat is het gemiddelde van 6, 8 en 10?", LessonInteractionType.MultipleChoice, "average", listOf(LessonOption("8","8"), LessonOption("9","9"), LessonOption("24","24")), "8", hint = "Tel op en deel door 3.", explanation = "6 + 8 + 10 = 24; 24 / 3 = 8."),
-            LessonStep("g8-04", "Data lezen", "Een klas heeft scores 7, 7, 8, 9. Welke score komt het vaakst voor?", LessonInteractionType.MultipleChoice, "mode", listOf(LessonOption("7","7"), LessonOption("8","8"), LessonOption("9","9")), "7", hint = "Tel hoe vaak elke score voorkomt.", explanation = "7 komt twee keer voor en is de modus."),
-            LessonStep("g8-05", "Procent naar breuk", "75% is gelijk aan?", LessonInteractionType.MultipleChoice, "percent-fraction", listOf(LessonOption("1/4","1/4"), LessonOption("1/2","1/2"), LessonOption("3/4","3/4")), "3/4", hint = "75 van 100 kun je vereenvoudigen.", explanation = "75% = 3/4."),
+            LessonStep("g8-01", "Gemiddelde", "Wat is het gemiddelde van 6, 8 en 10?", LessonInteractionType.MultipleChoice, "average", listOf(LessonOption("7","7"), LessonOption("8","8"), LessonOption("9","9")), "8", hint = "Tel op en deel door drie.", explanation = "(6+8+10)/3 = 8."),
+            LessonStep("g8-02", "Korting", "Een jas van €80 krijgt 25% korting. De korting is €___.", LessonInteractionType.FillBlank, "percent", acceptedAnswers = listOf("20"), hint = "25% is een kwart.", explanation = "Een kwart van €80 is €20."),
+            LessonStep("g8-03", "Kans", "Een zak heeft 3 rode en 1 blauwe knikker. Welke kleur trek je waarschijnlijker?", LessonInteractionType.MultipleChoice, "probability", listOf(LessonOption("red","rood"), LessonOption("blue","blauw")), "red", hint = "Welke kleur zit er vaker in?", explanation = "Er zijn meer rode knikkers, dus rood is waarschijnlijker."),
+            LessonStep("g8-04", "Data-aanpak", "Zet in volgorde hoe je een gemiddelde berekent.", LessonInteractionType.Ordering, "average", options = listOf(LessonOption("sum","Tel alle waarden op"), LessonOption("count","Tel hoeveel waarden er zijn"), LessonOption("divide","Deel de som door het aantal")), correctOrder = listOf("sum","count","divide"), hint = "Eerst heb je de totale som nodig.", explanation = "Som ÷ aantal = gemiddelde."),
         ),
         remedialSteps = mapOf(
-            "percent" to LessonStep("g8-r1", "Terug naar 10%", "10% van 50 = ?", LessonInteractionType.FillBlank, "percent", acceptedAnswers = listOf("5"), hint = "Deel door 10.", explanation = "10% van 50 is 5."),
-            "average" to LessonStep("g8-r2", "Gemiddelde stap voor stap", "Gemiddelde van 4 en 6?", LessonInteractionType.FillBlank, "average", acceptedAnswers = listOf("5"), hint = "4 + 6 = 10; deel door 2.", explanation = "Het gemiddelde is 5."),
+            "average" to LessonStep("g8-r1", "Klein gemiddelde", "Gemiddelde van 4 en 6 = ?", LessonInteractionType.FillBlank, "average", acceptedAnswers = listOf("5"), hint = "(4+6)/2.", explanation = "10/2 = 5."),
+            "percent" to LessonStep("g8-r2", "Tien procent", "10% van 30 = ?", LessonInteractionType.FillBlank, "percent", acceptedAnswers = listOf("3"), hint = "Deel door 10.", explanation = "10% van 30 is 3."),
         ),
     )
 }
