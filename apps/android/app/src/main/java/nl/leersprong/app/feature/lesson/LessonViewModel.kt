@@ -61,21 +61,37 @@ object LessonLaunchStore {
 
 class LessonViewModel(application: Application) : AndroidViewModel(application) {
     private val learningRepository = OfflineLearningRepository(application)
-    private val definition = AllLessons.get(LessonLaunchStore.selectedLessonId)
-    private val steps = definition.steps
-    private val remedialSteps = definition.remedialSteps
+    private var definition = AllLessons.get(LessonLaunchStore.selectedLessonId)
     private var remedialStep: LessonStep? = null
 
     private val _uiState = MutableStateFlow(initialState())
     val uiState: StateFlow<LessonUiState> = _uiState.asStateFlow()
 
+    private val steps: List<LessonStep> get() = definition.steps
+    private val remedialSteps: Map<String, LessonStep> get() = definition.remedialSteps
+
     private fun initialState() = LessonUiState(
         lessonTitle = definition.title,
-        order = steps.first().options.map { it.id },
+        order = definition.steps.first().options.map { it.id },
     )
 
-    fun currentStep(): LessonStep = remedialStep ?: steps[_uiState.value.currentIndex.coerceIn(0, steps.lastIndex)]
-    fun stepCount(): Int = steps.size
+    private fun syncSelectedLesson() {
+        val selected = AllLessons.get(LessonLaunchStore.selectedLessonId)
+        if (selected.id == definition.id) return
+        definition = selected
+        remedialStep = null
+        _uiState.value = initialState()
+    }
+
+    fun currentStep(): LessonStep {
+        syncSelectedLesson()
+        return remedialStep ?: steps[_uiState.value.currentIndex.coerceIn(0, steps.lastIndex)]
+    }
+
+    fun stepCount(): Int {
+        syncSelectedLesson()
+        return steps.size
+    }
 
     fun selectOption(id: String) {
         if (_uiState.value.checked) return
@@ -104,6 +120,7 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
     fun toggleHint() = _uiState.update { it.copy(showHint = !it.showHint) }
 
     fun checkAnswer() {
+        syncSelectedLesson()
         val step = currentStep()
         val state = _uiState.value
         if (state.checked) return
@@ -141,6 +158,7 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun continueLesson() {
+        syncSelectedLesson()
         val state = _uiState.value
         if (!state.checked) return
 
@@ -222,6 +240,7 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun restart() {
+        syncSelectedLesson()
         remedialStep = null
         _uiState.value = initialState()
     }
