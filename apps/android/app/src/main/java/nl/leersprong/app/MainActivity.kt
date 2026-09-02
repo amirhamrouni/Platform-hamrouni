@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import nl.leersprong.app.diagnostic.DiagnosticRoute
 import nl.leersprong.app.feature.buddy.BuddyRoute
 import nl.leersprong.app.feature.home.LearnerHomeRoute
 import nl.leersprong.app.feature.learn.LearnWorldScreen
@@ -52,6 +53,14 @@ class MainActivity : ComponentActivity() {
                         profile = currentProfile,
                         firstRun = true,
                         onSave = profileViewModel::save,
+                        onDone = { destination = AppDestination.Home },
+                    )
+                    return@LeerSprongTheme
+                }
+
+                if (!currentProfile.diagnosticCompleted) {
+                    DiagnosticRoute(
+                        learnerGroup = currentProfile.group,
                         onDone = { destination = AppDestination.Home },
                     )
                     return@LeerSprongTheme
