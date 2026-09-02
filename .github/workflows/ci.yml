@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Test SLO curriculum sync tooling
+        run: python3 scripts/test_sync_slo_curriculum.py
       - uses: pnpm/action-setup@v4
         with:
           version: 10.15.0
