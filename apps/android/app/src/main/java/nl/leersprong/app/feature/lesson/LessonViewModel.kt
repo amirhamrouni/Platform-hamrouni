@@ -1,12 +1,15 @@
 package nl.leersprong.app.feature.lesson
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlin.math.roundToInt
 
-enum class LessonInteractionType { MultipleChoice, Ordering }
+enum class LessonInteractionType { MultipleChoice, Ordering, ListenChoose }
 
 data class LessonOption(val id: String, val label: String)
 
@@ -18,6 +21,7 @@ data class LessonStep(
     val options: List<LessonOption>,
     val correctOptionId: String? = null,
     val correctOrder: List<String> = emptyList(),
+    val speakText: String? = null,
     val hint: String,
     val explanation: String,
 )
@@ -32,10 +36,15 @@ data class LessonUiState(
     val showHint: Boolean = false,
     val earnedXp: Int = 0,
     val mistakes: Int = 0,
+    val correctAnswers: Int = 0,
     val completed: Boolean = false,
+    val masteryPercent: Int = 0,
+    val nextReviewAtEpochMs: Long? = null,
 )
 
-class LessonViewModel : ViewModel() {
+class LessonViewModel(application: Application) : AndroidViewModel(application) {
+    private val progressStore = application.getSharedPreferences("leersprong_lesson_progress", Context.MODE_PRIVATE)
+
     private val steps = listOf(
         LessonStep(
             id = "sum-8-7",
@@ -46,6 +55,17 @@ class LessonViewModel : ViewModel() {
             correctOptionId = "15",
             hint = "Maak eerst 10: 8 + 2 = 10. Hoeveel blijft er dan van 7 over?",
             explanation = "Goed gezien: 8 + 7 = 15. Splits 7 in 2 en 5: 8 + 2 + 5 = 15.",
+        ),
+        LessonStep(
+            id = "listen-ten-plus-four",
+            title = "Luister en kies",
+            prompt = "Luister naar de som en kies het juiste antwoord.",
+            interaction = LessonInteractionType.ListenChoose,
+            options = listOf(LessonOption("12", "12"), LessonOption("14", "14"), LessonOption("16", "16")),
+            correctOptionId = "14",
+            speakText = "Tien plus vier. Wat is het antwoord?",
+            hint = "Je hoort: tien plus vier.",
+            explanation = "Tien plus vier is veertien.",
         ),
         LessonStep(
             id = "order-strategy",
@@ -105,7 +125,8 @@ class LessonViewModel : ViewModel() {
         val state = _uiState.value
         if (state.checked) return
         val correct = when (step.interaction) {
-            LessonInteractionType.MultipleChoice -> state.selectedOptionId == step.correctOptionId
+            LessonInteractionType.MultipleChoice,
+            LessonInteractionType.ListenChoose -> state.selectedOptionId == step.correctOptionId
             LessonInteractionType.Ordering -> state.order == step.correctOrder
         }
         _uiState.update {
@@ -114,6 +135,7 @@ class LessonViewModel : ViewModel() {
                 isCorrect = correct,
                 earnedXp = it.earnedXp + if (correct) 20 else 5,
                 mistakes = it.mistakes + if (correct) 0 else 1,
+                correctAnswers = it.correctAnswers + if (correct) 1 else 0,
             )
         }
     }
@@ -122,7 +144,7 @@ class LessonViewModel : ViewModel() {
         val state = _uiState.value
         if (!state.checked) return
         if (state.currentIndex >= steps.lastIndex) {
-            _uiState.update { it.copy(completed = true) }
+            completeLesson()
             return
         }
         val nextIndex = state.currentIndex + 1
@@ -137,6 +159,24 @@ class LessonViewModel : ViewModel() {
                 showHint = false,
             )
         }
+    }
+
+    private fun completeLesson() {
+        val state = _uiState.value
+        val mastery = (state.correctAnswers.toFloat() / steps.size * 100).roundToInt().coerceIn(0, 100)
+        val reviewDelayMs = when {
+            mastery < 50 -> 6 * 60 * 60 * 1000L
+            mastery < 75 -> 24 * 60 * 60 * 1000L
+            mastery < 90 -> 3 * 24 * 60 * 60 * 1000L
+            else -> 7 * 24 * 60 * 60 * 1000L
+        }
+        val nextReview = System.currentTimeMillis() + reviewDelayMs
+        progressStore.edit()
+            .putInt("math_addition_mastery", mastery)
+            .putLong("math_addition_next_review", nextReview)
+            .putInt("math_addition_last_xp", state.earnedXp)
+            .apply()
+        _uiState.update { it.copy(completed = true, masteryPercent = mastery, nextReviewAtEpochMs = nextReview) }
     }
 
     fun restart() {
