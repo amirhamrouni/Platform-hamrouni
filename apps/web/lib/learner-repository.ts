@@ -65,6 +65,8 @@ export async function loadSkillScores(ownerUid: string, learnerId: string): Prom
       skillId: String(data.skillId),
       mastery: Number(data.mastery),
       priority: data.priority as SkillScore['priority'],
+      evidenceCount: Number.isFinite(Number(data.evidenceCount)) ? Number(data.evidenceCount) : undefined,
+      evidenceConfidence: Number.isFinite(Number(data.evidenceConfidence)) ? Number(data.evidenceConfidence) : undefined,
     }));
 }
 
@@ -100,6 +102,8 @@ export async function persistAssessment(ownerUid: string, learnerId: string, sco
       skillId: score.skillId,
       mastery: score.mastery,
       priority: score.priority,
+      evidenceCount: score.evidenceCount ?? 0,
+      evidenceConfidence: score.evidenceConfidence ?? 0,
       source: 'baseline-assessment',
       updatedAt: serverTimestamp(),
     },
