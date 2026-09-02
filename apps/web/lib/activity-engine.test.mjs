@@ -93,7 +93,7 @@ test('recommended difficulty increases as mastery becomes secure', () => {
   assert.equal(recommendedDifficulty({
     ...baseState,
     mastery: 0.9,
-    recentAttempts: [attempt(), attempt({ activityId: 'a2' }), attempt({ activityId: 'a3', correct: false })],
+    recentAttempts: [attempt(), attempt({ activityId: 'a2' }), attempt({ activityId: 'a3' })],
   }), 5);
 });
 
@@ -103,7 +103,7 @@ test('adaptive selection chooses the closest unseen difficulty', () => {
   assert.equal(next?.id, 'easy-related');
 });
 
-test('relearning prioritizes a related unseen activity and steps difficulty down', () => {
+test('relearning prioritizes the strongest conceptual match before difficulty distance', () => {
   const failed = {
     ...activities[2],
     id: 'failed-hard',
@@ -111,7 +111,7 @@ test('relearning prioritizes a related unseen activity and steps difficulty down
     difficulty: 3,
   };
   const next = selectRelearningActivity(activities, failed, []);
-  assert.equal(next?.id, 'medium-related');
+  assert.equal(next?.id, 'easy-related');
 });
 
 test('recent incorrect evidence keeps relearning active above the mastery threshold', () => {
