@@ -21,6 +21,7 @@ export type SkillScore = {
   mastery: number;
   priority: 'high' | 'medium' | 'low';
   evidenceCount?: number;
+  evidenceConfidence?: number;
 };
 
 export function scoreAssessment(answers: AssessmentAnswer[]): SkillScore[] {
@@ -47,12 +48,19 @@ export function scoreAssessment(answers: AssessmentAnswer[]): SkillScore[] {
 
     const posterior = (priorMastery * priorWeight + weightedEvidence) / (priorWeight + totalWeight);
     const mastery = Math.round(Math.max(0, Math.min(1, posterior)) * 100);
+    const evidenceConfidence = Math.round((1 - Math.exp(-totalWeight / 2.5)) * 100);
+    const priority = mastery < 50
+      ? 'high'
+      : mastery < 75 || evidenceConfidence < 50
+        ? 'medium'
+        : 'low';
 
     return {
       skillId,
       mastery,
-      priority: mastery < 50 ? 'high' : mastery < 75 ? 'medium' : 'low',
+      priority,
       evidenceCount: items.length,
+      evidenceConfidence,
     };
   });
 }
