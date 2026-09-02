@@ -18,7 +18,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import nl.leersprong.app.feature.buddy.BuddyRoute
 import nl.leersprong.app.feature.home.LearnerHomeRoute
 import nl.leersprong.app.feature.learn.LearnWorldScreen
-import nl.leersprong.app.feature.lesson.LessonCatalog
+import nl.leersprong.app.feature.lesson.AllLessons
 import nl.leersprong.app.feature.lesson.LessonLaunchStore
 import nl.leersprong.app.feature.lesson.LessonRoute
 import nl.leersprong.app.feature.progress.ProgressRoute
@@ -62,6 +62,8 @@ class MainActivity : ComponentActivity() {
                     destination = AppDestination.Lesson
                 }
 
+                val recommendedLessonId = AllLessons.forGroup(currentProfile.group).first().id
+
                 fun selectTab(tab: LearnerTab) {
                     destination = when (tab) {
                         LearnerTab.Home -> AppDestination.Home
@@ -74,7 +76,7 @@ class MainActivity : ComponentActivity() {
 
                 when (destination) {
                     AppDestination.Home -> LearnerHomeRoute(
-                        onContinue = { launchLesson(LessonCatalog.G4_MULTIPLICATION) },
+                        onContinue = { launchLesson(recommendedLessonId) },
                         onTab = ::selectTab,
                     )
                     AppDestination.Learn -> LearnWorldScreen(
@@ -83,7 +85,7 @@ class MainActivity : ComponentActivity() {
                         onTab = ::selectTab,
                     )
                     AppDestination.Buddy -> BuddyRoute(
-                        onStartLesson = { launchLesson(LessonCatalog.G4_MULTIPLICATION) },
+                        onStartLesson = { launchLesson(recommendedLessonId) },
                         onTab = ::selectTab,
                     )
                     AppDestination.Progress -> ProgressRoute(onTab = ::selectTab)
