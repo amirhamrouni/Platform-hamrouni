@@ -24,4 +24,9 @@ data class SkillReviewEntity(
     val nextReviewAtEpochMs: Long,
     val updatedAtEpochMs: Long,
     val pendingSync: Boolean = true,
+    val fsrsStability: Double = 0.0,
+    val fsrsDifficulty: Double = 0.0,
+    val fsrsReps: Int = 0,
+    val fsrsLapses: Int = 0,
+    val fsrsLastReviewAtEpochMs: Long = 0L,
 )
