@@ -1,5 +1,10 @@
 package nl.leersprong.app.feature.progress
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,24 +18,37 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nl.leersprong.app.feature.home.HomeViewModel
+import nl.leersprong.app.reminder.ReviewReminderScheduler
 import nl.leersprong.app.ui.navigation.LearnerBottomBar
 import nl.leersprong.app.ui.navigation.LearnerTab
+import java.text.DateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun ProgressRoute(
@@ -40,6 +58,24 @@ fun ProgressRoute(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val math = state.tasks.firstOrNull { it.id == "math" }
     val review = state.tasks.firstOrNull { it.id == "review" }
+    val context = LocalContext.current
+    var reminderScheduled by remember { mutableStateOf(false) }
+
+    fun scheduleReminder() {
+        val reviewAt = state.nextReviewAtEpochMs ?: return
+        ReviewReminderScheduler.schedule(context, reviewAt)
+        reminderScheduled = true
+    }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) scheduleReminder()
+    }
+
+    val reviewLabel = state.nextReviewAtEpochMs?.let {
+        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, Locale("nl", "NL")).format(Date(it))
+    }
 
     Scaffold(bottomBar = { LearnerBottomBar(selected = LearnerTab.Progress, onSelect = onTab) }) { padding ->
         LazyColumn(
@@ -62,7 +98,7 @@ fun ProgressRoute(
             }
             item {
                 EvidenceCard(
-                    title = "Rekenen · Optellen",
+                    title = "Rekenen · Tafels begrijpen",
                     subtitle = math?.subtitle ?: "Nog geen bewijs",
                     progress = math?.progress ?: 0,
                 )
@@ -73,6 +109,49 @@ fun ProgressRoute(
                     subtitle = review?.subtitle ?: "Nog geen review gepland",
                     progress = review?.progress ?: 0,
                 )
+            }
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF2FF)),
+                ) {
+                    Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Rounded.NotificationsActive, contentDescription = null, tint = Color(0xFF0A58CA))
+                            Text("Slimme herinnering", fontWeight = FontWeight.Black, fontSize = 17.sp, color = Color(0xFF062A70))
+                        }
+                        Text(
+                            when {
+                                reminderScheduled -> "Herinnering staat aan voor $reviewLabel."
+                                reviewLabel != null -> "Je volgende slimme herhaling staat gepland voor $reviewLabel. Je kiest zelf of je een melding wilt."
+                                else -> "Na je eerste afgeronde les kan je hier een herinnering instellen."
+                            },
+                            color = Color(0xFF53657D),
+                        )
+                        Button(
+                            enabled = state.nextReviewAtEpochMs != null && !reminderScheduled,
+                            onClick = {
+                                val needsPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                if (needsPermission) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    scheduleReminder()
+                                }
+                            },
+                        ) {
+                            Text(
+                                when {
+                                    reminderScheduled -> "Herinnering ingesteld"
+                                    state.nextReviewAtEpochMs == null -> "Voltooi eerst een les"
+                                    else -> "Herinner mij"
+                                },
+                                fontWeight = FontWeight.Black,
+                            )
+                        }
+                    }
+                }
             }
             item {
                 Text("Jouw leerbewijs", fontWeight = FontWeight.Black, fontSize = 20.sp, modifier = Modifier.padding(top = 8.dp))
