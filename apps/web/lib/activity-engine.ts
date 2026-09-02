@@ -131,6 +131,24 @@ export function needsRelearning(state: AdaptiveSessionState, minimumMastery = 0.
   return state.mastery < minimumMastery || recent.some((attempt) => !attempt.correct);
 }
 
+export function calculateNextReviewAt(
+  state: AdaptiveSessionState,
+  attempt: ActivityAttempt,
+): string {
+  const attemptedAt = new Date(attempt.attemptedAt);
+  const anchor = Number.isNaN(attemptedAt.getTime()) ? new Date() : attemptedAt;
+
+  let intervalHours = 12;
+  if (!attempt.correct || state.mastery < 0.4) intervalHours = 6;
+  else if (state.mastery < 0.6) intervalHours = 24;
+  else if (state.mastery < 0.75) intervalHours = 72;
+  else if (state.mastery < 0.9) intervalHours = 24 * 7;
+  else intervalHours = 24 * 14;
+
+  const evidenceBoost = state.evidenceCount >= 8 && attempt.correct ? 1.5 : 1;
+  return new Date(anchor.getTime() + intervalHours * evidenceBoost * 60 * 60 * 1000).toISOString();
+}
+
 export function masteryPercent(state: AdaptiveSessionState) {
   return Math.round(clamp(state.mastery) * 100);
 }
