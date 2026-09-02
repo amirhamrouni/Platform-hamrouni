@@ -1,5 +1,6 @@
 package nl.leersprong.app.feature.lesson
 
+import android.speech.tts.TextToSpeech
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -34,17 +36,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import java.text.DateFormat
+import java.util.Date
+import java.util.Locale
 
 private val LessonBlue = Color(0xFF062A70)
 private val LessonGreen = Color(0xFF20B866)
@@ -96,7 +109,7 @@ private fun LessonScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.Rounded.ArrowBack, contentDescription = "Terug") }
+            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Terug") }
             LinearProgressIndicator(
                 progress = { (state.currentIndex + 1f) / totalSteps },
                 modifier = Modifier.weight(1f).height(9.dp).clip(CircleShape),
@@ -119,7 +132,7 @@ private fun LessonScreen(
                 colors = CardDefaults.cardColors(containerColor = Color.White),
             ) {
                 Text(
-                    if (state.checked && state.isCorrect == true) "Uitstekend! Je strategie klopt." else if (state.checked) "Bijna. Kijk naar de hint en probeer de denkwijze te volgen." else "${step.title}. Neem je tijd — ik help als je vastloopt.",
+                    if (state.checked && state.isCorrect == true) "Uitstekend! Je strategie klopt." else if (state.checked) "Bijna. Kijk naar de uitleg en probeer de denkwijze te volgen." else "${step.title}. Neem je tijd — ik help als je vastloopt.",
                     modifier = Modifier.padding(14.dp),
                     color = Color(0xFF263A58),
                     fontWeight = FontWeight.SemiBold,
@@ -140,8 +153,13 @@ private fun LessonScreen(
                 Text(state.lessonTitle, color = Color(0xFF718096), fontWeight = FontWeight.Bold)
                 Text(step.prompt, fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Black, color = LessonBlue)
 
+                if (step.interaction == LessonInteractionType.ListenChoose && step.speakText != null) {
+                    DutchSpeechButton(text = step.speakText)
+                }
+
                 when (step.interaction) {
-                    LessonInteractionType.MultipleChoice -> step.options.forEach { option ->
+                    LessonInteractionType.MultipleChoice,
+                    LessonInteractionType.ListenChoose -> step.options.forEach { option ->
                         val selected = state.selectedOptionId == option.id
                         val correctSelected = state.checked && option.id == step.correctOptionId
                         val wrongSelected = state.checked && selected && !correctSelected
@@ -214,6 +232,7 @@ private fun LessonScreen(
 
                 if (state.checked) {
                     Card(
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                         colors = CardDefaults.cardColors(containerColor = if (state.isCorrect == true) Color(0xFFE8F8EE) else Color(0xFFFFF0E2)),
                         shape = RoundedCornerShape(18.dp),
                     ) {
@@ -241,7 +260,43 @@ private fun LessonScreen(
 }
 
 @Composable
+private fun DutchSpeechButton(text: String) {
+    val context = LocalContext.current
+    var ready by remember { mutableStateOf(false) }
+    val speaker = remember {
+        TextToSpeech(context) { status ->
+            ready = status == TextToSpeech.SUCCESS
+        }
+    }
+    DisposableEffect(speaker) {
+        onDispose {
+            speaker.stop()
+            speaker.shutdown()
+        }
+    }
+    Button(
+        onClick = {
+            if (ready) {
+                speaker.language = Locale("nl", "NL")
+                speaker.setSpeechRate(0.9f)
+                speaker.speak(text, TextToSpeech.QUEUE_FLUSH, null, "leersprong-listen")
+            }
+        },
+        enabled = ready,
+        modifier = Modifier.fillMaxWidth().height(56.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEAF2FF), contentColor = LessonBlue),
+    ) {
+        Icon(Icons.Rounded.VolumeUp, contentDescription = null)
+        Text("  Luister opnieuw", fontWeight = FontWeight.Black)
+    }
+}
+
+@Composable
 private fun LessonComplete(state: LessonUiState, onBack: () -> Unit, onRestart: () -> Unit) {
+    val reviewLabel = state.nextReviewAtEpochMs?.let {
+        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, Locale("nl", "NL")).format(Date(it))
+    }
     Column(
         modifier = Modifier.fillMaxSize().background(LessonBlue).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -256,7 +311,11 @@ private fun LessonComplete(state: LessonUiState, onBack: () -> Unit, onRestart: 
         Spacer(Modifier.height(24.dp))
         Text("Les afgerond!", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Black)
         Text("Je verdiende ${state.earnedXp} XP", color = Color(0xFFDCEAFF), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text("${state.masteryPercent}% beheersing · ${state.correctAnswers} goed", color = Color(0xFFB8ED6F), fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 8.dp))
         Text("${state.mistakes} fout${if (state.mistakes == 1) "" else "en"} gebruikt om slimmer te oefenen", color = Color(0xFFBFD5FF), textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 12.dp))
+        if (reviewLabel != null) {
+            Text("Slimme herhaling: $reviewLabel", color = Color.White, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+        }
         Button(onClick = onBack, modifier = Modifier.fillMaxWidth().padding(top = 18.dp), colors = ButtonDefaults.buttonColors(containerColor = LessonYellow, contentColor = Color(0xFF2F2700))) {
             Text("Terug naar mijn pad", fontWeight = FontWeight.Black)
         }
