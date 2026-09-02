@@ -18,6 +18,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import nl.leersprong.app.feature.buddy.BuddyRoute
 import nl.leersprong.app.feature.home.LearnerHomeRoute
 import nl.leersprong.app.feature.learn.LearnWorldScreen
+import nl.leersprong.app.feature.lesson.LessonCatalog
+import nl.leersprong.app.feature.lesson.LessonLaunchStore
 import nl.leersprong.app.feature.lesson.LessonRoute
 import nl.leersprong.app.feature.progress.ProgressRoute
 import nl.leersprong.app.profile.ProfileScreen
@@ -55,6 +57,11 @@ class MainActivity : ComponentActivity() {
                     return@LeerSprongTheme
                 }
 
+                fun launchLesson(lessonId: String) {
+                    LessonLaunchStore.select(lessonId)
+                    destination = AppDestination.Lesson
+                }
+
                 fun selectTab(tab: LearnerTab) {
                     destination = when (tab) {
                         LearnerTab.Home -> AppDestination.Home
@@ -67,15 +74,16 @@ class MainActivity : ComponentActivity() {
 
                 when (destination) {
                     AppDestination.Home -> LearnerHomeRoute(
-                        onContinue = { destination = AppDestination.Lesson },
+                        onContinue = { launchLesson(LessonCatalog.G4_MULTIPLICATION) },
                         onTab = ::selectTab,
                     )
                     AppDestination.Learn -> LearnWorldScreen(
-                        onStartMath = { destination = AppDestination.Lesson },
+                        learnerGroup = currentProfile.group,
+                        onStartLesson = ::launchLesson,
                         onTab = ::selectTab,
                     )
                     AppDestination.Buddy -> BuddyRoute(
-                        onStartLesson = { destination = AppDestination.Lesson },
+                        onStartLesson = { launchLesson(LessonCatalog.G4_MULTIPLICATION) },
                         onTab = ::selectTab,
                     )
                     AppDestination.Progress -> ProgressRoute(onTab = ::selectTab)
@@ -85,7 +93,7 @@ class MainActivity : ComponentActivity() {
                         onSave = profileViewModel::save,
                         onDone = { destination = AppDestination.Home },
                     )
-                    AppDestination.Lesson -> LessonRoute(onBack = { destination = AppDestination.Home })
+                    AppDestination.Lesson -> LessonRoute(onBack = { destination = AppDestination.Learn })
                 }
             }
         }
