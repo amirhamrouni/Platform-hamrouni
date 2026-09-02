@@ -107,6 +107,30 @@ export function selectNextActivity(
     .sort((a, b) => Math.abs(a.difficulty - target) - Math.abs(b.difficulty - target))[0] ?? null;
 }
 
+export function selectRelearningActivity(
+  activities: LearningActivity[],
+  failedActivity: LearningActivity,
+  seenActivityIds: string[],
+): LearningActivity | null {
+  const unseen = activities.filter((activity) => !seenActivityIds.includes(activity.id));
+  if (unseen.length === 0) return null;
+
+  const targetDifficulty = Math.max(1, failedActivity.difficulty - 1);
+  const sharedTags = (activity: LearningActivity) => activity.tags.filter((tag) => failedActivity.tags.includes(tag)).length;
+
+  return unseen
+    .sort((a, b) => {
+      const tagDifference = sharedTags(b) - sharedTags(a);
+      if (tagDifference !== 0) return tagDifference;
+      return Math.abs(a.difficulty - targetDifficulty) - Math.abs(b.difficulty - targetDifficulty);
+    })[0] ?? null;
+}
+
+export function needsRelearning(state: AdaptiveSessionState, minimumMastery = 0.55): boolean {
+  const recent = state.recentAttempts.slice(-2);
+  return state.mastery < minimumMastery || recent.some((attempt) => !attempt.correct);
+}
+
 export function masteryPercent(state: AdaptiveSessionState) {
   return Math.round(clamp(state.mastery) * 100);
 }
