@@ -130,7 +130,12 @@ private fun LessonScreen(
             }
             Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Text(
-                    if (state.checked && state.isCorrect == true) "Uitstekend! Je strategie klopt." else if (state.checked) "Bijna. Kijk naar de uitleg en probeer de denkwijze te volgen." else "${step.title}. Neem je tijd — ik help als je vastloopt.",
+                    when {
+                        state.relearningActive -> "Ik heb gezien waar het lastig werd. We doen één slimme herstap en gaan daarna verder."
+                        state.checked && state.isCorrect == true -> "Uitstekend! Je strategie klopt."
+                        state.checked -> "Bijna. Kijk naar de uitleg en probeer de denkwijze te volgen."
+                        else -> "${step.title}. Neem je tijd — ik help als je vastloopt."
+                    },
                     modifier = Modifier.padding(14.dp),
                     color = Color(0xFF263A58),
                     fontWeight = FontWeight.SemiBold,
@@ -145,6 +150,14 @@ private fun LessonScreen(
             elevation = CardDefaults.cardElevation(2.dp),
         ) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (state.relearningActive) {
+                    Text(
+                        "SLIMME HERSTAP",
+                        color = Color(0xFFB45309),
+                        fontWeight = FontWeight.Black,
+                        fontSize = 12.sp,
+                    )
+                }
                 Text(state.lessonTitle, color = Color(0xFF718096), fontWeight = FontWeight.Bold)
                 Text(step.prompt, fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.Black, color = LessonBlue)
 
@@ -184,13 +197,18 @@ private fun LessonScreen(
                     }
 
                     LessonInteractionType.FillBlank -> {
+                        val numericOnly = step.acceptedAnswers.isNotEmpty() && step.acceptedAnswers.all { answer ->
+                            answer.matches(Regex("[0-9]+([.,][0-9]+)?"))
+                        }
                         OutlinedTextField(
                             value = state.textAnswer,
                             onValueChange = onTextAnswer,
                             enabled = !state.checked,
                             modifier = Modifier.fillMaxWidth(),
                             label = { Text("Jouw antwoord") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = if (numericOnly) KeyboardType.Decimal else KeyboardType.Text,
+                            ),
                             singleLine = true,
                         )
                     }
