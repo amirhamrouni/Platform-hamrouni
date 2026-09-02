@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import nl.leersprong.app.data.OfflineLearningRepository
+import java.util.Calendar
 
 private const val MATH_SKILL_ID = "g4-math-multiplication-foundations"
 
@@ -42,12 +43,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            combine(repository.observeReviews(), repository.observeTotalXp()) { reviews, xp ->
+            combine(
+                repository.observeReviews(),
+                repository.observeTotalXp(),
+                repository.observePracticeTimestamps(),
+            ) { reviews, xp, practiceTimestamps ->
                 val now = System.currentTimeMillis()
                 val math = reviews.firstOrNull { it.skillId == MATH_SKILL_ID }
                 val dueCount = reviews.count { it.nextReviewAtEpochMs <= now }
                 val mastery = math?.masteryPercent ?: 0
+                val streak = calculatePracticeStreak(practiceTimestamps, now)
                 HomeUiState(
+                    streakDays = streak,
                     xp = xp,
                     badges = reviews.count { it.masteryPercent >= 75 && it.evidenceCount >= 4 },
                     pathStep = if (mastery > 0) 2 else 1,
@@ -69,4 +76,31 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             }.collect { _uiState.value = it }
         }
     }
+}
+
+private fun calculatePracticeStreak(timestamps: List<Long>, now: Long): Int {
+    if (timestamps.isEmpty()) return 0
+    val practicedDays = timestamps.mapTo(mutableSetOf()) { startOfLocalDay(it) }
+    val cursor = Calendar.getInstance().apply { timeInMillis = startOfLocalDay(now) }
+
+    if (cursor.timeInMillis !in practicedDays) {
+        cursor.add(Calendar.DAY_OF_YEAR, -1)
+        if (cursor.timeInMillis !in practicedDays) return 0
+    }
+
+    var streak = 0
+    while (cursor.timeInMillis in practicedDays) {
+        streak += 1
+        cursor.add(Calendar.DAY_OF_YEAR, -1)
+    }
+    return streak
+}
+
+private fun startOfLocalDay(timestamp: Long): Long = Calendar.getInstance().run {
+    timeInMillis = timestamp
+    set(Calendar.HOUR_OF_DAY, 0)
+    set(Calendar.MINUTE, 0)
+    set(Calendar.SECOND, 0)
+    set(Calendar.MILLISECOND, 0)
+    timeInMillis
 }
