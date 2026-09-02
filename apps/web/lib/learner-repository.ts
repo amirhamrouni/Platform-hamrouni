@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from './firebase';
 import type { LearnerProfileInput, SkillScore } from './learner';
+import type { ActivityAttempt, AdaptiveSessionState } from './activity-engine';
 
 export type PersistedLearner = LearnerProfileInput & {
   id: string;
@@ -87,4 +88,36 @@ export async function persistAssessment(ownerUid: string, learnerId: string, sco
     scores,
     createdAt: serverTimestamp(),
   });
+}
+
+export async function persistLessonAttempt(
+  ownerUid: string,
+  learnerId: string,
+  lessonId: string,
+  attempt: ActivityAttempt,
+  session: AdaptiveSessionState,
+) {
+  const priority = session.mastery < 0.5 ? 'high' : session.mastery < 0.75 ? 'medium' : 'low';
+
+  await Promise.all([
+    addDoc(collection(getFirebaseDb(), 'learners', learnerId, 'attempts'), {
+      ownerUid,
+      kind: 'lesson-activity',
+      lessonId,
+      ...attempt,
+      masteryAfter: Math.round(session.mastery * 100),
+      evidenceCount: session.evidenceCount,
+      createdAt: serverTimestamp(),
+    }),
+    setDoc(doc(getFirebaseDb(), 'learners', learnerId, 'skillState', attempt.skillId), {
+      ownerUid,
+      skillId: attempt.skillId,
+      mastery: Math.round(session.mastery * 100),
+      priority,
+      source: 'lesson-evidence',
+      evidenceCount: session.evidenceCount,
+      lastPractisedAt: attempt.attemptedAt,
+      updatedAt: serverTimestamp(),
+    }, { merge: true }),
+  ]);
 }
