@@ -13,12 +13,14 @@ export type AssessmentAnswer = {
   skillId: string;
   correct: boolean;
   confidence: 1 | 2 | 3;
+  difficulty?: 1 | 2 | 3;
 };
 
 export type SkillScore = {
   skillId: string;
   mastery: number;
   priority: 'high' | 'medium' | 'low';
+  evidenceCount?: number;
 };
 
 export function scoreAssessment(answers: AssessmentAnswer[]): SkillScore[] {
@@ -30,17 +32,27 @@ export function scoreAssessment(answers: AssessmentAnswer[]): SkillScore[] {
   }
 
   return [...grouped.entries()].map(([skillId, items]) => {
-    const raw = items.reduce((sum, item) => {
-      const correctness = item.correct ? 1 : 0;
-      const confidenceAdjustment = item.correct ? (item.confidence - 1) * 0.05 : -(item.confidence - 1) * 0.05;
-      return sum + Math.max(0, Math.min(1, correctness + confidenceAdjustment));
-    }, 0) / items.length;
+    const priorWeight = 1;
+    const priorMastery = 0.5;
+    let weightedEvidence = 0;
+    let totalWeight = 0;
 
-    const mastery = Math.round(raw * 100);
+    for (const item of items) {
+      const difficultyWeight = item.difficulty === 3 ? 1.15 : item.difficulty === 1 ? 0.9 : 1;
+      const confidenceWeight = item.confidence === 3 ? 1.08 : item.confidence === 1 ? 0.94 : 1;
+      const weight = difficultyWeight * confidenceWeight;
+      weightedEvidence += (item.correct ? 1 : 0) * weight;
+      totalWeight += weight;
+    }
+
+    const posterior = (priorMastery * priorWeight + weightedEvidence) / (priorWeight + totalWeight);
+    const mastery = Math.round(Math.max(0, Math.min(1, posterior)) * 100);
+
     return {
       skillId,
       mastery,
       priority: mastery < 50 ? 'high' : mastery < 75 ? 'medium' : 'low',
+      evidenceCount: items.length,
     };
   });
 }
