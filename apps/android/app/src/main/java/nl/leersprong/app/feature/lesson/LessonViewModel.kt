@@ -46,6 +46,15 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
     }
     fun continueLesson(){syncSelectedLesson();val state=_uiState.value;if(!state.checked)return;if(state.relearningActive){remedialStep=null;moveNext(state.currentIndex+1);return};val remedial=state.pendingRelearningConcept?.let(remedialSteps::get);if(remedial!=null){remedialStep=remedial;_uiState.update{it.copy(selectedOptionId=null,textAnswer="",order=remedial.options.map(LessonOption::id),checked=false,isCorrect=null,showHint=false,pendingRelearningConcept=null,relearningActive=true)};return};moveNext(state.currentIndex+1)}
     private fun moveNext(next:Int){if(next>steps.lastIndex){completeLesson();return};val s=steps[next];_uiState.update{it.copy(currentIndex=next,selectedOptionId=null,textAnswer="",order=s.options.map(LessonOption::id),checked=false,isCorrect=null,showHint=false,pendingRelearningConcept=null,relearningActive=false)}}
-    private fun completeLesson(){val state=_uiState.value;val evidence=state.answeredActivities.coerceAtLeast(1);val mastery=(state.correctAnswers.toFloat()/evidence*100).roundToInt().coerceIn(0,100);val delay=when{mastery<50->6*60*60*1000L;mastery<75->24*60*60*1000L;mastery<90->3*24*60*60*1000L;else->7*24*60*60*1000L};val review=System.currentTimeMillis()+delay;_uiState.update{it.copy(completed=true,masteryPercent=mastery,nextReviewAtEpochMs=review,relearningActive=false)};viewModelScope.launch{learningRepository.updateReview(definition.skillId,mastery,evidence,review)}}
+    private fun completeLesson(){
+        val state=_uiState.value
+        val evidence=state.answeredActivities.coerceAtLeast(1)
+        val mastery=(state.correctAnswers.toFloat()/evidence*100).roundToInt().coerceIn(0,100)
+        _uiState.update{it.copy(completed=true,masteryPercent=mastery,relearningActive=false)}
+        viewModelScope.launch{
+            val nextReview=learningRepository.scheduleReview(definition.skillId,mastery,evidence)
+            _uiState.update{it.copy(nextReviewAtEpochMs=nextReview)}
+        }
+    }
     fun restart(){syncSelectedLesson();remedialStep=null;_uiState.value=initialState()}
 }
