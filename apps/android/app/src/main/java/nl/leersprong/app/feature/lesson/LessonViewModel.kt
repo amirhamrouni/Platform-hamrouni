@@ -18,19 +18,19 @@ data class LessonUiState(val lessonTitle:String,val currentIndex:Int=0,val selec
 
 object LessonLaunchStore {
     var selectedLessonId: String = LessonCatalog.G4_MULTIPLICATION; private set
-    fun select(lessonId: String) { selectedLessonId = PlatformLessons.get(lessonId).id }
+    fun select(lessonId: String) { selectedLessonId = LessonLibrary.get(lessonId).id }
 }
 
 class LessonViewModel(application: Application) : AndroidViewModel(application) {
     private val learningRepository = OfflineLearningRepository(application)
-    private var definition = PlatformLessons.get(LessonLaunchStore.selectedLessonId)
+    private var definition = LessonLibrary.get(LessonLaunchStore.selectedLessonId)
     private var remedialStep: LessonStep? = null
     private val _uiState = MutableStateFlow(initialState())
     val uiState: StateFlow<LessonUiState> = _uiState.asStateFlow()
     private val steps get() = definition.steps
     private val remedialSteps get() = definition.remedialSteps
     private fun initialState() = LessonUiState(lessonTitle=definition.title, order=definition.steps.first().options.map { it.id })
-    private fun syncSelectedLesson() { val selected=PlatformLessons.get(LessonLaunchStore.selectedLessonId); if(selected.id!=definition.id){definition=selected;remedialStep=null;_uiState.value=initialState()} }
+    private fun syncSelectedLesson() { val selected=LessonLibrary.get(LessonLaunchStore.selectedLessonId); if(selected.id!=definition.id){definition=selected;remedialStep=null;_uiState.value=initialState()} }
     fun currentStep(): LessonStep { syncSelectedLesson(); return remedialStep ?: steps[_uiState.value.currentIndex.coerceIn(0,steps.lastIndex)] }
     fun stepCount(): Int { syncSelectedLesson(); return steps.size }
     fun selectOption(id:String){if(!_uiState.value.checked)_uiState.update{it.copy(selectedOptionId=id)}}
