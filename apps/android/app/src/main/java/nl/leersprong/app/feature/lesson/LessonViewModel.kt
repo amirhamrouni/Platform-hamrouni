@@ -11,9 +11,9 @@ import kotlinx.coroutines.launch
 import nl.leersprong.app.data.OfflineLearningRepository
 import kotlin.math.roundToInt
 
-enum class LessonInteractionType { MultipleChoice, FillBlank, Ordering, ListenChoose }
+enum class LessonInteractionType { MultipleChoice, FillBlank, Ordering, ListenChoose, WordPattern }
 data class LessonOption(val id: String, val label: String)
-data class LessonStep(val id:String,val title:String,val prompt:String,val interaction:LessonInteractionType,val conceptTag:String,val options:List<LessonOption> = emptyList(),val correctOptionId:String?=null,val acceptedAnswers:List<String> = emptyList(),val correctOrder:List<String> = emptyList(),val speakText:String?=null,val hint:String,val explanation:String)
+data class LessonStep(val id:String,val title:String,val prompt:String,val interaction:LessonInteractionType,val conceptTag:String,val options:List<LessonOption> = emptyList(),val correctOptionId:String?=null,val acceptedAnswers:List<String> = emptyList(),val correctOrder:List<String> = emptyList(),val speakText:String?=null,val hint:String,val explanation:String,val targetWord:String?=null)
 data class LessonUiState(val lessonTitle:String,val currentIndex:Int=0,val selectedOptionId:String?=null,val textAnswer:String="",val order:List<String> = emptyList(),val checked:Boolean=false,val isCorrect:Boolean?=null,val showHint:Boolean=false,val earnedXp:Int=0,val mistakes:Int=0,val correctAnswers:Int=0,val answeredActivities:Int=0,val pendingRelearningConcept:String?=null,val relearningActive:Boolean=false,val completed:Boolean=false,val masteryPercent:Int=0,val nextReviewAtEpochMs:Long?=null)
 
 object LessonLaunchStore {
@@ -39,7 +39,12 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
     fun toggleHint()=_uiState.update{it.copy(showHint=!it.showHint)}
     fun checkAnswer(){
         syncSelectedLesson();val step=currentStep();val state=_uiState.value;if(state.checked)return
-        val correct=when(step.interaction){LessonInteractionType.MultipleChoice,LessonInteractionType.ListenChoose->state.selectedOptionId==step.correctOptionId;LessonInteractionType.FillBlank->step.acceptedAnswers.any{it.equals(state.textAnswer.trim(),true)};LessonInteractionType.Ordering->state.order==step.correctOrder}
+        val correct=when(step.interaction){
+            LessonInteractionType.MultipleChoice,LessonInteractionType.ListenChoose->state.selectedOptionId==step.correctOptionId
+            LessonInteractionType.FillBlank->step.acceptedAnswers.any{it.equals(state.textAnswer.trim(),true)}
+            LessonInteractionType.Ordering->state.order==step.correctOrder
+            LessonInteractionType.WordPattern->step.targetWord?.let{WordPatternEvaluator.normalize(state.textAnswer)==WordPatternEvaluator.normalize(it)}==true
+        }
         val xp=if(correct)20 else 5
         _uiState.update{it.copy(checked=true,isCorrect=correct,earnedXp=it.earnedXp+xp,mistakes=it.mistakes+if(correct)0 else 1,correctAnswers=it.correctAnswers+if(correct)1 else 0,answeredActivities=it.answeredActivities+1,pendingRelearningConcept=if(!correct&&!it.relearningActive)step.conceptTag else it.pendingRelearningConcept)}
         viewModelScope.launch{learningRepository.recordAttempt(definition.id,definition.skillId,step.id,correct,if(state.showHint)1 else 0,xp)}
