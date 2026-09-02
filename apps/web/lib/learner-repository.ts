@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from './firebase';
 import type { LearnerProfileInput, SkillScore } from './learner';
-import type { ActivityAttempt, AdaptiveSessionState } from './activity-engine';
+import { calculateNextReviewAt, type ActivityAttempt, type AdaptiveSessionState } from './activity-engine';
 
 export type PersistedLearner = LearnerProfileInput & {
   id: string;
@@ -122,6 +122,7 @@ export async function persistLessonAttempt(
   session: AdaptiveSessionState,
 ) {
   const priority = session.mastery < 0.5 ? 'high' : session.mastery < 0.75 ? 'medium' : 'low';
+  const nextReviewAt = calculateNextReviewAt(session, attempt);
 
   await Promise.all([
     addDoc(collection(getFirebaseDb(), 'learners', learnerId, 'attempts'), {
@@ -131,6 +132,7 @@ export async function persistLessonAttempt(
       ...attempt,
       masteryAfter: Math.round(session.mastery * 100),
       evidenceCount: session.evidenceCount,
+      nextReviewAt,
       createdAt: serverTimestamp(),
     }),
     setDoc(doc(getFirebaseDb(), 'learners', learnerId, 'skillState', attempt.skillId), {
@@ -141,6 +143,7 @@ export async function persistLessonAttempt(
       source: 'lesson-evidence',
       evidenceCount: session.evidenceCount,
       lastPractisedAt: attempt.attemptedAt,
+      nextReviewAt,
       updatedAt: serverTimestamp(),
     }, { merge: true }),
   ]);
