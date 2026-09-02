@@ -19,4 +19,5 @@ jobs:
           node-version: 22
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm --filter @leersprong/web typecheck
+      - run: pnpm --filter @leersprong/web test
       - run: pnpm --filter @leersprong/web build
