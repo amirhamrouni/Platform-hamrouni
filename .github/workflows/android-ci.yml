@@ -30,6 +30,8 @@ jobs:
         run: gradle -p apps/android :app:assembleDebug --stacktrace
       - name: Build release APK
         run: gradle -p apps/android :app:assembleRelease --stacktrace
+      - name: Build release App Bundle
+        run: gradle -p apps/android :app:bundleRelease --stacktrace
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
@@ -41,4 +43,10 @@ jobs:
         with:
           name: leersprong-release-unsigned-apk
           path: apps/android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+      - name: Upload release App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: leersprong-release-aab
+          path: apps/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
