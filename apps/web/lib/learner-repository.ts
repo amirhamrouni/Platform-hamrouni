@@ -67,6 +67,8 @@ export async function loadSkillScores(ownerUid: string, learnerId: string): Prom
       priority: data.priority as SkillScore['priority'],
       evidenceCount: Number.isFinite(Number(data.evidenceCount)) ? Number(data.evidenceCount) : undefined,
       evidenceConfidence: Number.isFinite(Number(data.evidenceConfidence)) ? Number(data.evidenceConfidence) : undefined,
+      lastPractisedAt: typeof data.lastPractisedAt === 'string' ? data.lastPractisedAt : undefined,
+      nextReviewAt: typeof data.nextReviewAt === 'string' ? data.nextReviewAt : undefined,
     }));
 }
 
