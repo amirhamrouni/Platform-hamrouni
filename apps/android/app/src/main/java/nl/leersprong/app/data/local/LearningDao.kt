@@ -21,6 +21,9 @@ interface LearningDao {
     @Query("SELECT COALESCE(SUM(earnedXp), 0) FROM lesson_attempts")
     fun observeTotalXp(): Flow<Int>
 
+    @Query("SELECT attemptedAtEpochMs FROM lesson_attempts ORDER BY attemptedAtEpochMs DESC")
+    fun observePracticeTimestamps(): Flow<List<Long>>
+
     @Query("SELECT * FROM lesson_attempts WHERE pendingSync = 1 ORDER BY attemptedAtEpochMs ASC")
     suspend fun pendingAttempts(): List<LessonAttemptEntity>
 
