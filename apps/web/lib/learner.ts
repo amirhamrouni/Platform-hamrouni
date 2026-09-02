@@ -22,6 +22,8 @@ export type SkillScore = {
   priority: 'high' | 'medium' | 'low';
   evidenceCount?: number;
   evidenceConfidence?: number;
+  lastPractisedAt?: string;
+  nextReviewAt?: string;
 };
 
 export function scoreAssessment(answers: AssessmentAnswer[]): SkillScore[] {
