@@ -1,12 +1,14 @@
 package nl.leersprong.app.feature.lesson
 
 import android.app.Application
-import android.content.Context
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import nl.leersprong.app.data.OfflineLearningRepository
 import kotlin.math.roundToInt
 
 enum class LessonInteractionType { MultipleChoice, Ordering, ListenChoose }
@@ -43,7 +45,7 @@ data class LessonUiState(
 )
 
 class LessonViewModel(application: Application) : AndroidViewModel(application) {
-    private val progressStore = application.getSharedPreferences("leersprong_lesson_progress", Context.MODE_PRIVATE)
+    private val learningRepository = OfflineLearningRepository(application)
 
     private val steps = listOf(
         LessonStep(
@@ -129,13 +131,24 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
             LessonInteractionType.ListenChoose -> state.selectedOptionId == step.correctOptionId
             LessonInteractionType.Ordering -> state.order == step.correctOrder
         }
+        val xpDelta = if (correct) 20 else 5
         _uiState.update {
             it.copy(
                 checked = true,
                 isCorrect = correct,
-                earnedXp = it.earnedXp + if (correct) 20 else 5,
+                earnedXp = it.earnedXp + xpDelta,
                 mistakes = it.mistakes + if (correct) 0 else 1,
                 correctAnswers = it.correctAnswers + if (correct) 1 else 0,
+            )
+        }
+        viewModelScope.launch {
+            learningRepository.recordAttempt(
+                lessonId = "math-addition-to-20",
+                skillId = "math-addition-foundations",
+                activityId = step.id,
+                correct = correct,
+                hintsUsed = if (state.showHint) 1 else 0,
+                earnedXp = xpDelta,
             )
         }
     }
@@ -171,12 +184,15 @@ class LessonViewModel(application: Application) : AndroidViewModel(application) 
             else -> 7 * 24 * 60 * 60 * 1000L
         }
         val nextReview = System.currentTimeMillis() + reviewDelayMs
-        progressStore.edit()
-            .putInt("math_addition_mastery", mastery)
-            .putLong("math_addition_next_review", nextReview)
-            .putInt("math_addition_last_xp", state.earnedXp)
-            .apply()
         _uiState.update { it.copy(completed = true, masteryPercent = mastery, nextReviewAtEpochMs = nextReview) }
+        viewModelScope.launch {
+            learningRepository.updateReview(
+                skillId = "math-addition-foundations",
+                masteryPercent = mastery,
+                evidenceCount = steps.size,
+                nextReviewAtEpochMs = nextReview,
+            )
+        }
     }
 
     fun restart() {
