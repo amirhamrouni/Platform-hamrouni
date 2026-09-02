@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowDownward
@@ -34,8 +35,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -54,6 +55,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -79,6 +81,7 @@ fun LessonRoute(
         totalSteps = viewModel.stepCount(),
         onBack = onBack,
         onOption = viewModel::selectOption,
+        onTextAnswer = viewModel::updateTextAnswer,
         onMove = viewModel::moveOrderItem,
         onHint = viewModel::toggleHint,
         onCheck = viewModel::checkAnswer,
@@ -94,6 +97,7 @@ private fun LessonScreen(
     totalSteps: Int,
     onBack: () -> Unit,
     onOption: (String) -> Unit,
+    onTextAnswer: (String) -> Unit,
     onMove: (String, Int) -> Unit,
     onHint: () -> Unit,
     onCheck: () -> Unit,
@@ -106,10 +110,7 @@ private fun LessonScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF4F7FC))
-            .padding(horizontal = 18.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxSize().background(Color(0xFFF4F7FC)).padding(horizontal = 18.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -124,17 +125,10 @@ private fun LessonScreen(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(Color(0xFFB8ED6F)),
-                contentAlignment = Alignment.Center,
-            ) {
+            Box(Modifier.size(48.dp).clip(CircleShape).background(Color(0xFFB8ED6F)), contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.SmartToy, contentDescription = null, tint = LessonBlue)
             }
-            Card(
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-            ) {
+            Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                 Text(
                     if (state.checked && state.isCorrect == true) "Uitstekend! Je strategie klopt." else if (state.checked) "Bijna. Kijk naar de uitleg en probeer de denkwijze te volgen." else "${step.title}. Neem je tijd — ik help als je vastloopt.",
                     modifier = Modifier.padding(14.dp),
@@ -150,12 +144,9 @@ private fun LessonScreen(
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(2.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
+            Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(state.lessonTitle, color = Color(0xFF718096), fontWeight = FontWeight.Bold)
-                Text(step.prompt, fontSize = 28.sp, lineHeight = 34.sp, fontWeight = FontWeight.Black, color = LessonBlue)
+                Text(step.prompt, fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.Black, color = LessonBlue)
 
                 if (step.interaction == LessonInteractionType.ListenChoose && step.speakText != null) {
                     DutchSpeechButton(text = step.speakText)
@@ -185,14 +176,23 @@ private fun LessonScreen(
                             colors = CardDefaults.cardColors(containerColor = background),
                             border = androidx.compose.foundation.BorderStroke(2.dp, border),
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 17.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
+                            Row(modifier = Modifier.padding(horizontal = 18.dp, vertical = 17.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(option.label, modifier = Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
                                 if (correctSelected) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = LessonGreen)
                             }
                         }
+                    }
+
+                    LessonInteractionType.FillBlank -> {
+                        OutlinedTextField(
+                            value = state.textAnswer,
+                            onValueChange = onTextAnswer,
+                            enabled = !state.checked,
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Jouw antwoord") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                        )
                     }
 
                     LessonInteractionType.Ordering -> state.order.forEachIndexed { index, id ->
@@ -214,10 +214,7 @@ private fun LessonScreen(
                 }
 
                 if (state.showHint) {
-                    Card(
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7D8)),
-                        shape = RoundedCornerShape(16.dp),
-                    ) {
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7D8)), shape = RoundedCornerShape(16.dp)) {
                         Text(step.hint, modifier = Modifier.padding(14.dp), color = Color(0xFF604A00), lineHeight = 21.sp)
                     }
                 }
@@ -239,9 +236,15 @@ private fun LessonScreen(
         }
 
         Spacer(Modifier.weight(1f))
+        val canCheck = when (step.interaction) {
+            LessonInteractionType.MultipleChoice,
+            LessonInteractionType.ListenChoose -> state.selectedOptionId != null
+            LessonInteractionType.FillBlank -> state.textAnswer.isNotBlank()
+            LessonInteractionType.Ordering -> state.order.isNotEmpty()
+        }
         Button(
             onClick = if (state.checked) onContinue else onCheck,
-            enabled = state.checked || step.interaction == LessonInteractionType.Ordering || state.selectedOptionId != null,
+            enabled = state.checked || canCheck,
             modifier = Modifier.fillMaxWidth().height(58.dp),
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.buttonColors(containerColor = if (state.checked) LessonGreen else LessonYellow, contentColor = if (state.checked) Color.White else Color(0xFF2F2700)),
@@ -270,14 +273,8 @@ private fun DraggableOrderingCard(
             ) { _, dragAmount ->
                 accumulatedDrag += dragAmount.y
                 when {
-                    accumulatedDrag > threshold && index < lastIndex -> {
-                        onMove(id, 1)
-                        accumulatedDrag = 0f
-                    }
-                    accumulatedDrag < -threshold && index > 0 -> {
-                        onMove(id, -1)
-                        accumulatedDrag = 0f
-                    }
+                    accumulatedDrag > threshold && index < lastIndex -> { onMove(id, 1); accumulatedDrag = 0f }
+                    accumulatedDrag < -threshold && index > 0 -> { onMove(id, -1); accumulatedDrag = 0f }
                 }
             }
         }
@@ -289,10 +286,7 @@ private fun DraggableOrderingCard(
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFD)),
         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD7DFEA)),
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.DragHandle, contentDescription = "Houd vast en sleep om te sorteren", tint = Color(0xFF8491A5))
             Text("  ${index + 1}", modifier = Modifier.size(34.dp), fontWeight = FontWeight.Black, color = LessonBlue)
             Text(label, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
@@ -310,11 +304,7 @@ private fun DraggableOrderingCard(
 private fun DutchSpeechButton(text: String) {
     val context = LocalContext.current
     var ready by remember { mutableStateOf(false) }
-    val speaker = remember {
-        TextToSpeech(context) { status ->
-            ready = status == TextToSpeech.SUCCESS
-        }
-    }
+    val speaker = remember { TextToSpeech(context) { status -> ready = status == TextToSpeech.SUCCESS } }
     DisposableEffect(speaker) {
         onDispose {
             speaker.stop()
@@ -349,10 +339,7 @@ private fun LessonComplete(state: LessonUiState, onBack: () -> Unit, onRestart: 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Box(
-            modifier = Modifier.size(110.dp).clip(CircleShape).background(LessonYellow),
-            contentAlignment = Alignment.Center,
-        ) {
+        Box(Modifier.size(110.dp).clip(CircleShape).background(LessonYellow), contentAlignment = Alignment.Center) {
             Icon(Icons.Rounded.Star, contentDescription = null, tint = LessonBlue, modifier = Modifier.size(64.dp))
         }
         Spacer(Modifier.height(24.dp))

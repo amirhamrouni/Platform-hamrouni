@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import nl.leersprong.app.data.OfflineLearningRepository
 
+private const val MATH_SKILL_ID = "g4-math-multiplication-foundations"
+
 data class HomeTask(
     val id: String,
     val title: String,
@@ -23,12 +25,12 @@ data class HomeUiState(
     val streakDays: Int = 0,
     val xp: Int = 0,
     val badges: Int = 0,
-    val currentLesson: String = "Optellen tot 20",
+    val currentLesson: String = "Tafels begrijpen",
     val pathStep: Int = 1,
     val pathTotal: Int = 4,
-    val coachMessage: String = "Begin met één korte oefening. Daarna pas ik je volgende stap aan.",
+    val coachMessage: String = "Begin met één korte tafeloefening. Daarna pas ik je volgende stap aan.",
     val tasks: List<HomeTask> = listOf(
-        HomeTask("math", "Rekenen", "Optellen tot 20", 0),
+        HomeTask("math", "Rekenen", "Tafels begrijpen", 0),
         HomeTask("review", "Slim herhalen", "Nog geen herhaling gepland", 0),
     ),
 )
@@ -42,7 +44,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             combine(repository.observeReviews(), repository.observeTotalXp()) { reviews, xp ->
                 val now = System.currentTimeMillis()
-                val math = reviews.firstOrNull { it.skillId == "math-addition-foundations" }
+                val math = reviews.firstOrNull { it.skillId == MATH_SKILL_ID }
                 val dueCount = reviews.count { it.nextReviewAtEpochMs <= now }
                 val mastery = math?.masteryPercent ?: 0
                 HomeUiState(
@@ -51,11 +53,11 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     pathStep = if (mastery > 0) 2 else 1,
                     coachMessage = when {
                         dueCount > 0 -> "Je hebt $dueCount slimme herhaling${if (dueCount == 1) "" else "en"} klaarstaan. We beginnen met wat nu het meeste helpt."
-                        mastery > 0 -> "Mooi, je laatste rekenstand is $mastery%. Vandaag bouwen we daarop verder."
-                        else -> "Begin met één korte oefening. Daarna pas ik je volgende stap aan."
+                        mastery > 0 -> "Mooi, je laatste tafelstand is $mastery%. Vandaag bouwen we daarop verder."
+                        else -> "Begin met één korte tafeloefening. Daarna pas ik je volgende stap aan."
                     },
                     tasks = listOf(
-                        HomeTask("math", "Rekenen", "Optellen tot 20", mastery),
+                        HomeTask("math", "Rekenen", "Tafels begrijpen", mastery),
                         HomeTask(
                             "review",
                             "Slim herhalen",
