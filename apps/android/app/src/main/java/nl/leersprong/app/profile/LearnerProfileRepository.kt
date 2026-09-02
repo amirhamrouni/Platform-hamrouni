@@ -17,6 +17,7 @@ private object ProfileKeys {
     val homeLanguage = stringPreferencesKey("home_language")
     val supportLanguageEnabled = booleanPreferencesKey("support_language_enabled")
     val completed = booleanPreferencesKey("completed")
+    val diagnosticCompleted = booleanPreferencesKey("diagnostic_completed")
 }
 
 data class LearnerProfile(
@@ -25,6 +26,7 @@ data class LearnerProfile(
     val homeLanguage: String = "Nederlands",
     val supportLanguageEnabled: Boolean = false,
     val completed: Boolean = false,
+    val diagnosticCompleted: Boolean = false,
 )
 
 class LearnerProfileRepository(private val context: Context) {
@@ -35,16 +37,27 @@ class LearnerProfileRepository(private val context: Context) {
             homeLanguage = preferences[ProfileKeys.homeLanguage] ?: "Nederlands",
             supportLanguageEnabled = preferences[ProfileKeys.supportLanguageEnabled] ?: false,
             completed = preferences[ProfileKeys.completed] ?: false,
+            diagnosticCompleted = preferences[ProfileKeys.diagnosticCompleted] ?: false,
         )
     }
 
     suspend fun save(profile: LearnerProfile) {
         context.learnerProfileDataStore.edit { preferences ->
+            val previousGroup = preferences[ProfileKeys.group]
             preferences[ProfileKeys.name] = profile.name.trim()
             preferences[ProfileKeys.group] = profile.group.coerceIn(1, 8)
             preferences[ProfileKeys.homeLanguage] = profile.homeLanguage
             preferences[ProfileKeys.supportLanguageEnabled] = profile.supportLanguageEnabled
             preferences[ProfileKeys.completed] = profile.name.isNotBlank()
+            if (previousGroup != null && previousGroup != profile.group.coerceIn(1, 8)) {
+                preferences[ProfileKeys.diagnosticCompleted] = false
+            }
+        }
+    }
+
+    suspend fun markDiagnosticCompleted() {
+        context.learnerProfileDataStore.edit { preferences ->
+            preferences[ProfileKeys.diagnosticCompleted] = true
         }
     }
 }
