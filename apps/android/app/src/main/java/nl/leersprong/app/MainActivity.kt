@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import nl.leersprong.app.diagnostic.DiagnosticRoute
-import nl.leersprong.app.engagement.EngagementHubScreen
+import nl.leersprong.app.engagement.EngagementWorldScreen
 import nl.leersprong.app.feature.buddy.BuddyRoute
 import nl.leersprong.app.feature.home.LearnerHomeRoute
 import nl.leersprong.app.feature.learn.LearnWorldScreen
@@ -107,7 +107,7 @@ class MainActivity : ComponentActivity() {
                         onDone = { destination = AppDestination.Home },
                     )
                     AppDestination.Lesson -> LessonRoute(onBack = { destination = AppDestination.Learn })
-                    AppDestination.Play -> EngagementHubScreen(
+                    AppDestination.Play -> EngagementWorldScreen(
                         learnerGroup = currentProfile.group,
                         onStartLesson = ::launchLesson,
                         onBack = { destination = AppDestination.Home },
