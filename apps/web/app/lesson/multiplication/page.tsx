@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,18 +14,20 @@ import {
 import { g4MultiplicationLesson } from '../../../lib/lessons/g4-multiplication';
 import { isFirebaseConfigured } from '../../../lib/firebase';
 import { resolveCurrentUser } from '../../../lib/auth';
-import { persistLessonAttempt } from '../../../lib/learner-repository';
+import { loadAdaptiveSkillState, persistLessonAttempt } from '../../../lib/learner-repository';
 
-const initialState: AdaptiveSessionState = {
+const fallbackState: AdaptiveSessionState = {
   skillId: g4MultiplicationLesson.skillId,
   mastery: 0.28,
   evidenceCount: 0,
   recentAttempts: [],
 };
 
+const lessonTargetCount = Math.min(6, g4MultiplicationLesson.activities.length);
+
 export default function MultiplicationLessonPage() {
   const router = useRouter();
-  const [session, setSession] = useState(initialState);
+  const [session, setSession] = useState(fallbackState);
   const [seen, setSeen] = useState<string[]>([]);
   const [current, setCurrent] = useState<LearningActivity>(g4MultiplicationLesson.activities[0]);
   const [choice, setChoice] = useState<number | null>(null);
@@ -35,10 +37,42 @@ export default function MultiplicationLessonPage() {
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [hintsUsed, setHintsUsed] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [hydrating, setHydrating] = useState(true);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function hydrateLesson() {
+      if (!isFirebaseConfigured) {
+        setHydrating(false);
+        return;
+      }
+
+      const learnerId = sessionStorage.getItem('leersprong:learnerId');
+      if (!learnerId) {
+        setHydrating(false);
+        return;
+      }
+
+      try {
+        const user = await resolveCurrentUser();
+        if (!user || cancelled) return;
+        const stored = await loadAdaptiveSkillState(user.uid, learnerId, g4MultiplicationLesson.skillId);
+        if (!cancelled && stored) setSession(stored);
+      } catch {
+        if (!cancelled) setError('Je vorige voortgang kon niet worden geladen. De les start met een veilige standaardwaarde.');
+      } finally {
+        if (!cancelled) setHydrating(false);
+      }
+    }
+
+    void hydrateLesson();
+    return () => { cancelled = true; };
+  }, []);
+
   const progress = useMemo(
-    () => Math.min(100, Math.round((seen.length / Math.min(6, g4MultiplicationLesson.activities.length)) * 100)),
+    () => Math.min(100, Math.round((seen.length / lessonTargetCount) * 100)),
     [seen.length],
   );
 
@@ -58,7 +92,7 @@ export default function MultiplicationLessonPage() {
   }
 
   async function submit() {
-    if (saving || feedback) return;
+    if (saving || feedback || hydrating) return;
     const value = responseValue();
     if ((current.kind === 'multiple-choice' || current.kind === 'listen-choose') && choice === null) return;
     if (current.kind === 'fill-blank' && textAnswer.trim() === '') return;
@@ -94,11 +128,17 @@ export default function MultiplicationLessonPage() {
   }
 
   function continueLesson() {
-    const next = selectNextActivity(g4MultiplicationLesson.activities, session, [...seen, current.id]);
-    if (!next || seen.length + 1 >= 6) {
+    if (seen.length >= lessonTargetCount) {
       router.push('/dashboard');
       return;
     }
+
+    const next = selectNextActivity(g4MultiplicationLesson.activities, session, seen);
+    if (!next) {
+      router.push('/dashboard');
+      return;
+    }
+
     setCurrent(next);
     resetInputs(next);
   }
@@ -131,6 +171,7 @@ export default function MultiplicationLessonPage() {
         </div>
         <div className="flowProgress"><span style={{ width: `${progress}%` }} /></div>
 
+        {hydrating && <p>Je leerstand wordt geladen…</p>}
         <p className="lessonGoal">🎯 {g4MultiplicationLesson.goal}</p>
         <span className="difficultyPill">Niveau {current.difficulty}/5</span>
         <h1>{current.prompt}</h1>
@@ -138,14 +179,14 @@ export default function MultiplicationLessonPage() {
         {(current.kind === 'multiple-choice' || current.kind === 'listen-choose') && (
           <div className="answerGrid">
             {current.options.map((option, index) => (
-              <button type="button" className={choice === index ? 'answer selected' : 'answer'} key={option} onClick={() => setChoice(index)} disabled={Boolean(feedback)}>{option}</button>
+              <button type="button" className={choice === index ? 'answer selected' : 'answer'} key={option} onClick={() => setChoice(index)} disabled={Boolean(feedback) || hydrating}>{option}</button>
             ))}
           </div>
         )}
 
         {current.kind === 'fill-blank' && (
           <div className="flowForm">
-            <label>Jouw antwoord<input value={textAnswer} onChange={(event) => setTextAnswer(event.target.value)} inputMode="numeric" disabled={Boolean(feedback)} /></label>
+            <label>Jouw antwoord<input value={textAnswer} onChange={(event) => setTextAnswer(event.target.value)} inputMode="numeric" disabled={Boolean(feedback) || hydrating} /></label>
           </div>
         )}
 
@@ -154,7 +195,7 @@ export default function MultiplicationLessonPage() {
             {ordering.map((item, index) => (
               <div className="orderingItem" key={item}>
                 <strong>{index + 1}. {item}</strong>
-                <div><button type="button" onClick={() => moveOrderingItem(index, -1)} disabled={index === 0 || Boolean(feedback)}>↑</button><button type="button" onClick={() => moveOrderingItem(index, 1)} disabled={index === ordering.length - 1 || Boolean(feedback)}>↓</button></div>
+                <div><button type="button" onClick={() => moveOrderingItem(index, -1)} disabled={index === 0 || Boolean(feedback) || hydrating}>↑</button><button type="button" onClick={() => moveOrderingItem(index, 1)} disabled={index === ordering.length - 1 || Boolean(feedback) || hydrating}>↓</button></div>
               </div>
             ))}
           </div>
@@ -162,8 +203,8 @@ export default function MultiplicationLessonPage() {
 
         {!feedback && (
           <div className="lessonActions">
-            <button type="button" className="hintButton" onClick={() => setHintsUsed((value) => value + 1)}>💡 Hint {hintsUsed > 0 ? `(${hintsUsed})` : ''}</button>
-            <button type="button" className="primaryButton" onClick={submit} disabled={saving}>Controleer <span>→</span></button>
+            <button type="button" className="hintButton" onClick={() => setHintsUsed((value) => value + 1)} disabled={hydrating}>💡 Hint {hintsUsed > 0 ? `(${hintsUsed})` : ''}</button>
+            <button type="button" className="primaryButton" onClick={submit} disabled={saving || hydrating}>Controleer <span>→</span></button>
           </div>
         )}
 
@@ -171,7 +212,7 @@ export default function MultiplicationLessonPage() {
           <div className={feedback.correct ? 'feedbackBox correctFeedback' : 'feedbackBox retryFeedback'}>
             <strong>{feedback.correct ? 'Goed gedaan! 🌟' : 'Bijna. Kijk naar de uitleg 👀'}</strong>
             <p>{feedback.explanation}</p>
-            <button type="button" className="primaryButton" onClick={continueLesson}>{seen.length >= 5 ? 'Klaar' : 'Volgende oefening'} <span>→</span></button>
+            <button type="button" className="primaryButton" onClick={continueLesson}>{seen.length >= lessonTargetCount ? 'Klaar' : 'Volgende oefening'} <span>→</span></button>
           </div>
         )}
 
