@@ -8,7 +8,9 @@ import {
   LearningActivity,
   evaluateActivity,
   masteryPercent,
+  needsRelearning,
   selectNextActivity,
+  selectRelearningActivity,
   updateAdaptiveMastery,
 } from '../../../lib/activity-engine';
 import { g4MultiplicationLesson } from '../../../lib/lessons/g4-multiplication';
@@ -24,6 +26,7 @@ const fallbackState: AdaptiveSessionState = {
 };
 
 const lessonTargetCount = Math.min(6, g4MultiplicationLesson.activities.length);
+const lessonMaximumCount = g4MultiplicationLesson.activities.length;
 
 export default function MultiplicationLessonPage() {
   const router = useRouter();
@@ -75,6 +78,7 @@ export default function MultiplicationLessonPage() {
     () => Math.min(100, Math.round((seen.length / lessonTargetCount) * 100)),
     [seen.length],
   );
+  const relearningActive = seen.length >= lessonTargetCount && needsRelearning(session) && seen.length < lessonMaximumCount;
 
   function responseValue() {
     if (current.kind === 'multiple-choice' || current.kind === 'listen-choose') return choice;
@@ -128,12 +132,19 @@ export default function MultiplicationLessonPage() {
   }
 
   function continueLesson() {
-    if (seen.length >= lessonTargetCount) {
+    const completedCore = seen.length >= lessonTargetCount;
+    const shouldRelearn = completedCore && needsRelearning(session) && seen.length < lessonMaximumCount;
+
+    if (completedCore && !shouldRelearn) {
       router.push('/dashboard');
       return;
     }
 
-    const next = selectNextActivity(g4MultiplicationLesson.activities, session, seen);
+    const failedActivity = feedback && !feedback.correct ? current : null;
+    const next = failedActivity
+      ? selectRelearningActivity(g4MultiplicationLesson.activities, failedActivity, seen)
+      : selectNextActivity(g4MultiplicationLesson.activities, session, seen);
+
     if (!next) {
       router.push('/dashboard');
       return;
@@ -172,7 +183,8 @@ export default function MultiplicationLessonPage() {
         <div className="flowProgress"><span style={{ width: `${progress}%` }} /></div>
 
         {hydrating && <p>Je leerstand wordt geladen…</p>}
-        <p className="lessonGoal">🎯 {g4MultiplicationLesson.goal}</p>
+        {relearningActive && <p className="lessonGoal">🔁 We oefenen nog even slim door op wat lastig was.</p>}
+        {!relearningActive && <p className="lessonGoal">🎯 {g4MultiplicationLesson.goal}</p>}
         <span className="difficultyPill">Niveau {current.difficulty}/5</span>
         <h1>{current.prompt}</h1>
 
@@ -212,7 +224,9 @@ export default function MultiplicationLessonPage() {
           <div className={feedback.correct ? 'feedbackBox correctFeedback' : 'feedbackBox retryFeedback'}>
             <strong>{feedback.correct ? 'Goed gedaan! 🌟' : 'Bijna. Kijk naar de uitleg 👀'}</strong>
             <p>{feedback.explanation}</p>
-            <button type="button" className="primaryButton" onClick={continueLesson}>{seen.length >= lessonTargetCount ? 'Klaar' : 'Volgende oefening'} <span>→</span></button>
+            <button type="button" className="primaryButton" onClick={continueLesson}>
+              {seen.length >= lessonTargetCount && !needsRelearning(session) ? 'Klaar' : feedback.correct ? 'Volgende oefening' : 'Oefen slim verder'} <span>→</span>
+            </button>
           </div>
         )}
 
