@@ -43,12 +43,13 @@ class LearnerProfileRepository(private val context: Context) {
 
     suspend fun save(profile: LearnerProfile) {
         context.learnerProfileDataStore.edit { preferences ->
+            val previousGroup = preferences[ProfileKeys.group]
             preferences[ProfileKeys.name] = profile.name.trim()
             preferences[ProfileKeys.group] = profile.group.coerceIn(1, 8)
             preferences[ProfileKeys.homeLanguage] = profile.homeLanguage
             preferences[ProfileKeys.supportLanguageEnabled] = profile.supportLanguageEnabled
             preferences[ProfileKeys.completed] = profile.name.isNotBlank()
-            if (profile.group != (preferences[ProfileKeys.group] ?: profile.group)) {
+            if (previousGroup != null && previousGroup != profile.group.coerceIn(1, 8)) {
                 preferences[ProfileKeys.diagnosticCompleted] = false
             }
         }
