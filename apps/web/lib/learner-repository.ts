@@ -68,6 +68,30 @@ export async function loadSkillScores(ownerUid: string, learnerId: string): Prom
     }));
 }
 
+export async function loadAdaptiveSkillState(
+  ownerUid: string,
+  learnerId: string,
+  skillId: string,
+): Promise<AdaptiveSessionState | null> {
+  const snapshot = await getDoc(doc(getFirebaseDb(), 'learners', learnerId, 'skillState', skillId));
+  if (!snapshot.exists()) return null;
+
+  const data = snapshot.data();
+  if (data.ownerUid !== ownerUid) return null;
+
+  const storedMastery = Number(data.mastery);
+  const mastery = Number.isFinite(storedMastery)
+    ? Math.max(0, Math.min(1, storedMastery > 1 ? storedMastery / 100 : storedMastery))
+    : 0;
+
+  return {
+    skillId,
+    mastery,
+    evidenceCount: Number.isFinite(Number(data.evidenceCount)) ? Number(data.evidenceCount) : 0,
+    recentAttempts: [],
+  };
+}
+
 export async function persistAssessment(ownerUid: string, learnerId: string, scores: SkillScore[]) {
   await Promise.all(scores.map((score) => setDoc(
     doc(getFirebaseDb(), 'learners', learnerId, 'skillState', score.skillId),
