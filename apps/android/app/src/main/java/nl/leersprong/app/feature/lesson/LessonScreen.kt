@@ -3,6 +3,7 @@ package nl.leersprong.app.feature.lesson
 import android.speech.tts.TextToSpeech
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.Lightbulb
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.SmartToy
@@ -38,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -193,26 +197,14 @@ private fun LessonScreen(
 
                     LessonInteractionType.Ordering -> state.order.forEachIndexed { index, id ->
                         val option = step.options.first { it.id == id }
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFD)),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD7DFEA)),
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text("${index + 1}", modifier = Modifier.size(28.dp), fontWeight = FontWeight.Black, color = LessonBlue)
-                                Text(option.label, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-                                IconButton(enabled = index > 0 && !state.checked, onClick = { onMove(id, -1) }) {
-                                    Icon(Icons.Rounded.ArrowUpward, contentDescription = "Omhoog")
-                                }
-                                IconButton(enabled = index < state.order.lastIndex && !state.checked, onClick = { onMove(id, 1) }) {
-                                    Icon(Icons.Rounded.ArrowDownward, contentDescription = "Omlaag")
-                                }
-                            }
-                        }
+                        DraggableOrderingCard(
+                            id = id,
+                            index = index,
+                            label = option.label,
+                            lastIndex = state.order.lastIndex,
+                            enabled = !state.checked,
+                            onMove = onMove,
+                        )
                     }
                 }
 
@@ -255,6 +247,61 @@ private fun LessonScreen(
             colors = ButtonDefaults.buttonColors(containerColor = if (state.checked) LessonGreen else LessonYellow, contentColor = if (state.checked) Color.White else Color(0xFF2F2700)),
         ) {
             Text(if (state.checked) "Volgende" else "Controleer", fontSize = 17.sp, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+private fun DraggableOrderingCard(
+    id: String,
+    index: Int,
+    label: String,
+    lastIndex: Int,
+    enabled: Boolean,
+    onMove: (String, Int) -> Unit,
+) {
+    var accumulatedDrag by remember(id) { mutableFloatStateOf(0f) }
+    val dragModifier = if (enabled) {
+        Modifier.pointerInput(id, index, lastIndex) {
+            val threshold = 44.dp.toPx()
+            detectDragGesturesAfterLongPress(
+                onDragEnd = { accumulatedDrag = 0f },
+                onDragCancel = { accumulatedDrag = 0f },
+            ) { _, dragAmount ->
+                accumulatedDrag += dragAmount.y
+                when {
+                    accumulatedDrag > threshold && index < lastIndex -> {
+                        onMove(id, 1)
+                        accumulatedDrag = 0f
+                    }
+                    accumulatedDrag < -threshold && index > 0 -> {
+                        onMove(id, -1)
+                        accumulatedDrag = 0f
+                    }
+                }
+            }
+        }
+    } else Modifier
+
+    Card(
+        modifier = Modifier.fillMaxWidth().then(dragModifier),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFD)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD7DFEA)),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.DragHandle, contentDescription = "Houd vast en sleep om te sorteren", tint = Color(0xFF8491A5))
+            Text("  ${index + 1}", modifier = Modifier.size(34.dp), fontWeight = FontWeight.Black, color = LessonBlue)
+            Text(label, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
+            IconButton(enabled = index > 0 && enabled, onClick = { onMove(id, -1) }) {
+                Icon(Icons.Rounded.ArrowUpward, contentDescription = "Omhoog")
+            }
+            IconButton(enabled = index < lastIndex && enabled, onClick = { onMove(id, 1) }) {
+                Icon(Icons.Rounded.ArrowDownward, contentDescription = "Omlaag")
+            }
         }
     }
 }
