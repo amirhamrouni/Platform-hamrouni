@@ -16,8 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SmartToy
 import androidx.compose.material.icons.rounded.Star
@@ -67,7 +67,7 @@ fun LearnerHomeRoute(
                     Text("LeerSprong NL", color = Color.White, fontWeight = FontWeight.Black, fontSize = 20.sp)
                     Column {
                         Text("Hoi ${state.learnerName}! 👋", color = Color.White, fontWeight = FontWeight.Black, fontSize = 30.sp)
-                        Text("Klaar voor je volgende slimme stap?", color = Color(0xFFDCEAFF))
+                        Text("Groep ${state.group} · klaar voor je volgende slimme stap?", color = Color(0xFFDCEAFF))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.size(72.dp).clip(CircleShape).background(Color(0xFFB8ED6F)), contentAlignment = Alignment.Center) {
@@ -86,8 +86,8 @@ fun LearnerHomeRoute(
             item {
                 Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     MetricCard(Modifier.weight(1f), "XP", state.xp.toString(), Icons.Rounded.Star)
+                    MetricCard(Modifier.weight(1f), "Streak", state.streakDays.toString(), Icons.Rounded.LocalFireDepartment)
                     MetricCard(Modifier.weight(1f), "Badges", state.badges.toString(), Icons.Rounded.EmojiEvents)
-                    MetricCard(Modifier.weight(1f), "Groep", state.group.toString(), Icons.Rounded.AutoStories)
                 }
             }
             item {
