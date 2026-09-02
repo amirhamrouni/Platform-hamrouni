@@ -15,6 +15,9 @@ interface LearningDao {
     @Upsert
     suspend fun upsertReview(review: SkillReviewEntity)
 
+    @Query("SELECT * FROM skill_reviews WHERE skillId = :skillId LIMIT 1")
+    suspend fun getReview(skillId: String): SkillReviewEntity?
+
     @Query("SELECT * FROM skill_reviews ORDER BY nextReviewAtEpochMs ASC")
     fun observeReviews(): Flow<List<SkillReviewEntity>>
 
