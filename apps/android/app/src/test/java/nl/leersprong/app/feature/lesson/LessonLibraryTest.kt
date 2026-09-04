@@ -64,6 +64,18 @@ class LessonLibraryTest {
     }
 
     @Test
+    fun everyGroupHasBroadSchoolYearEnrichment() {
+        assertEquals(16, SchoolYearBroadLessons.lessons.size)
+        assertEquals(48, SchoolYearBroadLessons.lessons.sumOf { it.steps.size })
+        (1..8).forEach { group ->
+            val broad = SchoolYearBroadLessons.lessons.filter { it.group == group }
+            assertEquals("Groep $group should have two broad lessons", 2, broad.size)
+            assertTrue("Groep $group missing Wereldoriëntatie", broad.any { it.subject == "Wereldoriëntatie" })
+            assertTrue("Groep $group broad activities incomplete", broad.all { it.steps.size == 3 })
+        }
+    }
+
+    @Test
     fun groepFourToEightHaveWordChallenge() {
         (4..8).forEach { group ->
             assertTrue(
