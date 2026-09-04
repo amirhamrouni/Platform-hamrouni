@@ -36,13 +36,14 @@ fun EngagementWorldScreen(
         "games" -> {
             Column(modifier = Modifier.fillMaxSize()) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(Color(0xFF051F53)).padding(horizontal = 10.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    modifier = Modifier.fillMaxWidth().background(Color(0xFF051F53)).padding(horizontal = 8.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Button(onClick = { section = "games" }, shape = RoundedCornerShape(14.dp)) { Text("🎮") }
                     OutlinedButton(onClick = { section = "missions" }, shape = RoundedCornerShape(14.dp)) { Text("⭐", color = Color.White) }
                     OutlinedButton(onClick = { section = "discover" }, shape = RoundedCornerShape(14.dp)) { Text("🌍", color = Color.White) }
-                    OutlinedButton(onClick = { section = "art" }, shape = RoundedCornerShape(14.dp)) { Text("🎨 Kunst", color = Color.White) }
+                    OutlinedButton(onClick = { section = "art" }, shape = RoundedCornerShape(14.dp)) { Text("🎨", color = Color.White) }
+                    OutlinedButton(onClick = { section = "story" }, shape = RoundedCornerShape(14.dp)) { Text("📖", color = Color.White) }
                 }
                 EngagementHubScreen(
                     learnerGroup = learnerGroup,
@@ -59,6 +60,10 @@ fun EngagementWorldScreen(
             learnerGroup = learnerGroup,
             onBack = { section = "games" },
         )
+        "story" -> StoryWorldScreen(
+            learnerGroup = learnerGroup,
+            onBack = { section = "games" },
+        )
         else -> {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().background(Color(0xFFF5F8FD)),
@@ -70,11 +75,12 @@ fun EngagementWorldScreen(
                         modifier = Modifier.fillMaxWidth().background(Color(0xFF062A70)).padding(18.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                             OutlinedButton(onClick = onBack) { Text("← Home", color = Color.White) }
                             OutlinedButton(onClick = { section = "games" }) { Text("🎮", color = Color.White) }
                             OutlinedButton(onClick = { section = "discover" }) { Text("🌍", color = Color.White) }
                             OutlinedButton(onClick = { section = "art" }) { Text("🎨", color = Color.White) }
+                            OutlinedButton(onClick = { section = "story" }) { Text("📖", color = Color.White) }
                         }
                         Text("Missies & Stem", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Black)
                         Text("Kom elke dag terug voor sterren, stemtraining en nieuwe beloningen.", color = Color(0xFFDCEAFF))
