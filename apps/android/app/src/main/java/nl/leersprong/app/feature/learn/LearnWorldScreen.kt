@@ -36,27 +36,57 @@ private val subjects = listOf(
 @Composable
 fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: (LearnerTab) -> Unit) {
     val groupLessons = LessonLibrary.forGroup(learnerGroup)
+    val schoolYearPath = SchoolYearLearningPath.forGroup(learnerGroup, groupLessons)
     Scaffold(bottomBar = { LearnerBottomBar(selected = LearnerTab.Learn, onSelect = onTab) }) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).background(Color(0xFFF4F7FC)),
             contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(bottom = 4.dp)) {
-                Text("LEERWERELD · GROEP $learnerGroup", color = Color(0xFF5B6B82), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
-                Text("Wat wil je vandaag ontdekken?", fontWeight = FontWeight.Black, fontSize = 30.sp, color = Color(0xFF062A70))
-                Text("Alleen lessen die echt in de native app werken zijn actief. Je voortgang komt uit je eigen oefenbewijs.", color = Color(0xFF64748B), lineHeight = 21.sp)
-            } }
-            item { Text("Voor jouw groep", fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color(0xFF172B4D), modifier = Modifier.padding(top = 8.dp)) }
-            items(groupLessons, key = { it.id }) { lesson -> LessonCard(lesson) { onStartLesson(lesson.id) } }
-            item { Card(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF062A70)), shape = RoundedCornerShape(22.dp)) {
-                Row(modifier = Modifier.padding(18.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Icon(Icons.Rounded.Map, null, tint = Color(0xFFB8ED6F))
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Slimme route", color = Color.White, fontWeight = FontWeight.Black)
-                        Text("Fouten kunnen een korte herstap activeren. Beheersing, XP en reviewmomenten worden uit echte antwoorden opgebouwd.", color = Color(0xFFDCEAFF), lineHeight = 20.sp)
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(bottom = 4.dp)) {
+                    Text("LEERWERELD · GROEP $learnerGroup", color = Color(0xFF5B6B82), fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                    Text("Jouw schooljaar", fontWeight = FontWeight.Black, fontSize = 30.sp, color = Color(0xFF062A70))
+                    Text("Lessen staan in een duidelijke leerlijn door het schooljaar. Je niveau en slimme herhaling blijven zich aanpassen aan je echte antwoorden.", color = Color(0xFF64748B), lineHeight = 21.sp)
+                }
+            }
+            item {
+                Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF2FF)), shape = RoundedCornerShape(22.dp)) {
+                    Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Rounded.CalendarMonth, null, tint = Color(0xFF0A58CA))
+                        Column {
+                            Text("Schooljaar 2026–2027", fontWeight = FontWeight.Black, color = Color(0xFF172B4D))
+                            Text("5 leerblokken · SLO-richting · adaptief per leerling", color = Color(0xFF5B6B82), fontSize = 13.sp)
+                        }
                     }
                 }
-            } }
+            }
+
+            SchoolYearBlock.entries.forEach { block ->
+                val blockLessons = schoolYearPath.filter { it.block == block }
+                if (blockLessons.isNotEmpty()) {
+                    item(key = "header-${block.name}") {
+                        Column(Modifier.padding(top = 8.dp, bottom = 2.dp)) {
+                            Text(block.label, fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color(0xFF172B4D))
+                            Text(block.period, color = Color(0xFF64748B), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    items(blockLessons, key = { it.lesson.id }) { scheduled ->
+                        LessonCard(scheduled.lesson, scheduled.sequence) { onStartLesson(scheduled.lesson.id) }
+                    }
+                }
+            }
+
+            item {
+                Card(modifier = Modifier.fillMaxWidth().padding(top = 4.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFF062A70)), shape = RoundedCornerShape(22.dp)) {
+                    Row(modifier = Modifier.padding(18.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Icon(Icons.Rounded.Map, null, tint = Color(0xFFB8ED6F))
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("Slimme route", color = Color.White, fontWeight = FontWeight.Black)
+                            Text("De jaarlijn geeft volgorde. Fouten kunnen een herstap activeren en FSRS bepaalt wanneer beheerde stof terugkomt.", color = Color(0xFFDCEAFF), lineHeight = 20.sp)
+                        }
+                    }
+                }
+            }
             item { Text("Alle leergebieden", fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color(0xFF172B4D), modifier = Modifier.padding(top = 10.dp)) }
             items(subjects, key = { it.title }) { subject ->
                 val count = groupLessons.count { it.subject == subject.title }
@@ -66,7 +96,7 @@ fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: 
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(subject.title, fontWeight = FontWeight.Black, fontSize = 17.sp)
                             Text(subject.subtitle, color = Color(0xFF6B7B91), fontSize = 13.sp, lineHeight = 18.sp)
-                            Text(if (count > 0) "$count native les${if (count == 1) "" else "sen"} beschikbaar" else "Volgende contentronde", color = if (count > 0) Color(0xFF168A4B) else Color(0xFF8A6A00), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(if (count > 0) "$count native les${if (count == 1) "" else "sen"} beschikbaar" else "Inhoud wordt uitgebreid", color = if (count > 0) Color(0xFF168A4B) else Color(0xFF8A6A00), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
                     }
                 }
@@ -76,7 +106,7 @@ fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: 
 }
 
 @Composable
-private fun LessonCard(lesson: LessonDefinition, onStart: () -> Unit) {
+private fun LessonCard(lesson: LessonDefinition, sequence: Int, onStart: () -> Unit) {
     val accent = when (lesson.subject) {
         "Nederlands" -> Color(0xFF7C3AED); "Engels" -> Color(0xFF0F8A83); "Wereldoriëntatie" -> Color(0xFF2E7D32)
         "Burgerschap" -> Color(0xFFD05A2B); "Digitale geletterdheid" -> Color(0xFF4557C4); "Kunst & Cultuur" -> Color(0xFFE88A16)
@@ -85,10 +115,11 @@ private fun LessonCard(lesson: LessonDefinition, onStart: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Box(Modifier.background(accent.copy(alpha = .10f), RoundedCornerShape(14.dp)).padding(10.dp), contentAlignment = Alignment.Center) {
-                    Icon(subjectIcon(lesson.subject), null, tint = accent)
+                Box(Modifier.background(accent.copy(alpha = .10f), RoundedCornerShape(14.dp)).padding(10.dp), contentAlignment = Alignment.Center) { Icon(subjectIcon(lesson.subject), null, tint = accent) }
+                Column(Modifier.weight(1f)) {
+                    Text("LES $sequence · ${lesson.subject}", color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                    Text(lesson.title, fontWeight = FontWeight.Black, fontSize = 19.sp, color = Color(0xFF172B4D))
                 }
-                Column(Modifier.weight(1f)) { Text(lesson.subject, color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp); Text(lesson.title, fontWeight = FontWeight.Black, fontSize = 19.sp, color = Color(0xFF172B4D)) }
                 Text("± ${lesson.estimatedMinutes} min", color = Color(0xFF6B7B91), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
             Text("${lesson.steps.size} kernactiviteiten · hints · feedback · slimme review", color = Color(0xFF64748B), fontSize = 13.sp)
