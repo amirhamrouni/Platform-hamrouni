@@ -3,7 +3,11 @@ package nl.leersprong.app.feature.lesson
 /** Single native lesson registry used by Home, Leerwereld and Lesson Player. */
 object LessonLibrary {
     val lessons: List<LessonDefinition> =
-        PlatformLessons.lessons + UpperPrimaryLanguageLessons.lessons + MathChallengeLessons.lessons + SpellingChallengeLessons.lessons
+        PlatformLessons.lessons +
+            SchoolYearCoreLessons.lessons +
+            UpperPrimaryLanguageLessons.lessons +
+            MathChallengeLessons.lessons +
+            SpellingChallengeLessons.lessons
 
     fun get(id: String): LessonDefinition =
         lessons.firstOrNull { it.id == id } ?: PlatformLessons.get(id)
