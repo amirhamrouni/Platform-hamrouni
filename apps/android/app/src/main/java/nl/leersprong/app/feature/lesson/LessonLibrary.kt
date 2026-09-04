@@ -5,6 +5,7 @@ object LessonLibrary {
     val lessons: List<LessonDefinition> = (
         PlatformLessons.lessons +
             SchoolYearCoreLessons.lessons +
+            SchoolYearBroadLessons.lessons +
             UpperPrimaryLanguageLessons.lessons +
             MathChallengeLessons.lessons +
             SpellingChallengeLessons.lessons
