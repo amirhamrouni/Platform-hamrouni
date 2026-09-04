@@ -51,6 +51,19 @@ class LessonLibraryTest {
     }
 
     @Test
+    fun everyGroupHasNewDutchAndMathSchoolYearCoreLessons() {
+        assertEquals(16, SchoolYearCoreLessons.lessons.size)
+        assertEquals(64, SchoolYearCoreLessons.lessons.sumOf { it.steps.size })
+        (1..8).forEach { group ->
+            val core = SchoolYearCoreLessons.lessons.filter { it.group == group }
+            assertEquals("Groep $group should have two new core lessons", 2, core.size)
+            assertTrue("Groep $group missing new Nederlands core", core.any { it.subject == "Nederlands" })
+            assertTrue("Groep $group missing new Rekenen core", core.any { it.subject == "Rekenen & Wiskunde" })
+            assertTrue("Groep $group core activities incomplete", core.all { it.steps.size == 4 })
+        }
+    }
+
+    @Test
     fun groepFourToEightHaveWordChallenge() {
         (4..8).forEach { group ->
             assertTrue(

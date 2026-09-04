@@ -25,9 +25,12 @@ data class ScheduledLesson(
 object SchoolYearLearningPath {
     fun forGroup(group: Int, lessons: List<LessonDefinition>): List<ScheduledLesson> {
         val groupLessons = lessons.filter { it.group == group }
+        // Order by developmental stage first, then alternate the core subjects. This avoids
+        // presenting every Dutch lesson before every maths lesson and feels closer to a
+        // normal primary-school week while still keeping prerequisites early in the year.
         val ordered = groupLessons.sortedWith(
-            compareBy<LessonDefinition> { subjectPriority(it.subject) }
-                .thenBy { skillPriority(it) }
+            compareBy<LessonDefinition> { skillPriority(it) }
+                .thenBy { subjectPriority(it.subject) }
                 .thenBy { it.title },
         )
         if (ordered.isEmpty()) return emptyList()
@@ -54,11 +57,12 @@ object SchoolYearLearningPath {
     private fun skillPriority(lesson: LessonDefinition): Int {
         val text = "${lesson.skillId} ${lesson.title}".lowercase()
         return when {
-            listOf("count", "getal", "number", "klank", "sound", "letter").any(text::contains) -> 0
-            listOf("addition", "sub", "optel", "aftrek", "vowel", "spelling", "word").any(text::contains) -> 1
-            listOf("multiplication", "tafel", "division", "delen", "reading", "lezen").any(text::contains) -> 2
-            listOf("fraction", "breuk", "percent", "procent", "text", "tekst", "write", "schrijf").any(text::contains) -> 3
-            else -> 4
+            listOf("count", "getal", "number", "klank", "sound", "letter", "shape", "vorm").any(text::contains) -> 0
+            listOf("addition", "subtraction", "optel", "aftrek", "vowel", "spelling", "short-words", "sentence").any(text::contains) -> 1
+            listOf("multiplication", "tafel", "division", "delen", "reading", "lezen", "time", "money", "measure").any(text::contains) -> 2
+            listOf("fraction", "breuk", "decimal", "percent", "procent", "text", "tekst", "argument", "ratio", "verhouding").any(text::contains) -> 3
+            listOf("source", "critical", "data", "scale", "probability", "summary").any(text::contains) -> 4
+            else -> 2
         }
     }
 }
