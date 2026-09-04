@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ArrowDownward
@@ -71,320 +73,89 @@ private val LessonGreen = Color(0xFF20B866)
 private val LessonYellow = Color(0xFFFFC62E)
 
 @Composable
-fun LessonRoute(
-    onBack: () -> Unit,
-    viewModel: LessonViewModel = viewModel(),
-) {
+fun LessonRoute(onBack: () -> Unit, viewModel: LessonViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    LessonScreen(
-        state = state,
-        step = viewModel.currentStep(),
-        totalSteps = viewModel.stepCount(),
-        onBack = onBack,
-        onOption = viewModel::selectOption,
-        onTextAnswer = viewModel::updateTextAnswer,
-        onMove = viewModel::moveOrderItem,
-        onHint = viewModel::toggleHint,
-        onCheck = viewModel::checkAnswer,
-        onContinue = viewModel::continueLesson,
-        onRestart = viewModel::restart,
-    )
+    LessonScreen(state, viewModel.currentStep(), viewModel.stepCount(), onBack, viewModel::selectOption, viewModel::updateTextAnswer, viewModel::moveOrderItem, viewModel::toggleHint, viewModel::checkAnswer, viewModel::continueLesson, viewModel::restart)
 }
 
 @Composable
-private fun LessonScreen(
-    state: LessonUiState,
-    step: LessonStep,
-    totalSteps: Int,
-    onBack: () -> Unit,
-    onOption: (String) -> Unit,
-    onTextAnswer: (String) -> Unit,
-    onMove: (String, Int) -> Unit,
-    onHint: () -> Unit,
-    onCheck: () -> Unit,
-    onContinue: () -> Unit,
-    onRestart: () -> Unit,
-) {
-    if (state.completed) {
-        LessonComplete(state = state, onBack = onBack, onRestart = onRestart)
-        return
-    }
-
+private fun LessonScreen(state: LessonUiState, step: LessonStep, totalSteps: Int, onBack: () -> Unit, onOption: (String) -> Unit, onTextAnswer: (String) -> Unit, onMove: (String, Int) -> Unit, onHint: () -> Unit, onCheck: () -> Unit, onContinue: () -> Unit, onRestart: () -> Unit) {
+    if (state.completed) { LessonComplete(state, onBack, onRestart); return }
+    val scrollState = rememberScrollState()
     Column(
-        modifier = Modifier.fillMaxSize().background(Color(0xFFF4F7FC)).padding(horizontal = 18.dp, vertical = 12.dp),
+        modifier = Modifier.fillMaxSize().background(Color(0xFFF4F7FC)).verticalScroll(scrollState).padding(horizontal = 18.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Terug") }
-            LinearProgressIndicator(
-                progress = { (state.currentIndex + 1f) / totalSteps },
-                modifier = Modifier.weight(1f).height(9.dp).clip(CircleShape),
-                color = LessonGreen,
-                trackColor = Color(0xFFDCE5F1),
-            )
+            LinearProgressIndicator(progress = { (state.currentIndex + 1f) / totalSteps }, modifier = Modifier.weight(1f).height(9.dp).clip(CircleShape), color = LessonGreen, trackColor = Color(0xFFDCE5F1))
             Text("  ${state.currentIndex + 1}/$totalSteps", fontWeight = FontWeight.ExtraBold)
         }
-
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.size(48.dp).clip(CircleShape).background(Color(0xFFB8ED6F)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.SmartToy, contentDescription = null, tint = LessonBlue)
-            }
+            Box(Modifier.size(48.dp).clip(CircleShape).background(Color(0xFFB8ED6F)), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.SmartToy, contentDescription = null, tint = LessonBlue) }
             Card(modifier = Modifier.weight(1f), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
-                Text(
-                    when {
-                        state.relearningActive -> "Ik heb gezien waar het lastig werd. We doen één slimme herstap en gaan daarna verder."
-                        state.checked && state.isCorrect == true -> "Uitstekend! Je strategie klopt."
-                        state.checked -> "Bijna. Kijk naar de uitleg en probeer de denkwijze te volgen."
-                        else -> "${step.title}. Neem je tijd — ik help als je vastloopt."
-                    },
-                    modifier = Modifier.padding(14.dp),
-                    color = Color(0xFF263A58),
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Text(when { state.relearningActive -> "Ik heb gezien waar het lastig werd. We doen één slimme herstap en gaan daarna verder."; state.checked && state.isCorrect == true -> "Uitstekend! Je strategie klopt."; state.checked -> "Bijna. Kijk naar de uitleg en probeer de denkwijze te volgen."; else -> "${step.title}. Neem je tijd — ik help als je vastloopt." }, modifier = Modifier.padding(14.dp), color = Color(0xFF263A58), fontWeight = FontWeight.SemiBold)
             }
         }
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(2.dp),
-        ) {
+        Card(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = Color.White), elevation = CardDefaults.cardElevation(2.dp)) {
             Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (state.relearningActive) {
-                    Text(
-                        "SLIMME HERSTAP",
-                        color = Color(0xFFB45309),
-                        fontWeight = FontWeight.Black,
-                        fontSize = 12.sp,
-                    )
-                }
+                if (state.relearningActive) Text("SLIMME HERSTAP", color = Color(0xFFB45309), fontWeight = FontWeight.Black, fontSize = 12.sp)
                 Text(state.lessonTitle, color = Color(0xFF718096), fontWeight = FontWeight.Bold)
                 Text(step.prompt, fontSize = 26.sp, lineHeight = 32.sp, fontWeight = FontWeight.Black, color = LessonBlue)
-
-                if (step.interaction == LessonInteractionType.ListenChoose && step.speakText != null) {
-                    DutchSpeechButton(text = step.speakText)
-                }
-
+                if (step.interaction == LessonInteractionType.ListenChoose && step.speakText != null) DutchSpeechButton(step.speakText)
                 when (step.interaction) {
-                    LessonInteractionType.MultipleChoice,
-                    LessonInteractionType.ListenChoose -> step.options.forEach { option ->
+                    LessonInteractionType.MultipleChoice, LessonInteractionType.ListenChoose -> step.options.forEach { option ->
                         val selected = state.selectedOptionId == option.id
                         val correctSelected = state.checked && option.id == step.correctOptionId
                         val wrongSelected = state.checked && selected && !correctSelected
-                        val background = when {
-                            correctSelected -> Color(0xFFE7F8ED)
-                            wrongSelected -> Color(0xFFFFECEC)
-                            selected -> Color(0xFFEAF2FF)
-                            else -> Color.White
-                        }
-                        val border = when {
-                            correctSelected -> LessonGreen
-                            wrongSelected -> Color(0xFFE24D4D)
-                            selected -> Color(0xFF3B82F6)
-                            else -> Color(0xFFD7DFEA)
-                        }
-                        Card(
-                            modifier = Modifier.fillMaxWidth().clickable(enabled = !state.checked) { onOption(option.id) },
-                            shape = RoundedCornerShape(18.dp),
-                            colors = CardDefaults.cardColors(containerColor = background),
-                            border = androidx.compose.foundation.BorderStroke(2.dp, border),
-                        ) {
-                            Row(modifier = Modifier.padding(horizontal = 18.dp, vertical = 17.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(option.label, modifier = Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold)
-                                if (correctSelected) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = LessonGreen)
-                            }
+                        val background = when { correctSelected -> Color(0xFFE7F8ED); wrongSelected -> Color(0xFFFFECEC); selected -> Color(0xFFEAF2FF); else -> Color.White }
+                        val border = when { correctSelected -> LessonGreen; wrongSelected -> Color(0xFFE24D4D); selected -> Color(0xFF3B82F6); else -> Color(0xFFD7DFEA) }
+                        Card(modifier = Modifier.fillMaxWidth().clickable(enabled = !state.checked) { onOption(option.id) }, shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = background), border = androidx.compose.foundation.BorderStroke(2.dp, border)) {
+                            Row(modifier = Modifier.padding(horizontal = 18.dp, vertical = 17.dp), verticalAlignment = Alignment.CenterVertically) { Text(option.label, modifier = Modifier.weight(1f), fontSize = 20.sp, fontWeight = FontWeight.ExtraBold); if (correctSelected) Icon(Icons.Rounded.CheckCircle, contentDescription = null, tint = LessonGreen) }
                         }
                     }
-
                     LessonInteractionType.FillBlank -> {
-                        val numericOnly = step.acceptedAnswers.isNotEmpty() && step.acceptedAnswers.all { answer ->
-                            answer.matches(Regex("[0-9]+([.,][0-9]+)?"))
-                        }
-                        OutlinedTextField(
-                            value = state.textAnswer,
-                            onValueChange = onTextAnswer,
-                            enabled = !state.checked,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Jouw antwoord") },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = if (numericOnly) KeyboardType.Decimal else KeyboardType.Text,
-                            ),
-                            singleLine = true,
-                        )
+                        val numericOnly = step.acceptedAnswers.isNotEmpty() && step.acceptedAnswers.all { it.matches(Regex("[0-9]+([.,][0-9]+)?")) }
+                        OutlinedTextField(value = state.textAnswer, onValueChange = onTextAnswer, enabled = !state.checked, modifier = Modifier.fillMaxWidth(), label = { Text("Jouw antwoord") }, keyboardOptions = KeyboardOptions(keyboardType = if (numericOnly) KeyboardType.Decimal else KeyboardType.Text), singleLine = true)
                     }
-
                     LessonInteractionType.WordPattern -> {
                         val target = step.targetWord.orEmpty()
-                        OutlinedTextField(
-                            value = state.textAnswer,
-                            onValueChange = { raw ->
-                                val clean = raw.filter(Char::isLetter).take(target.length)
-                                onTextAnswer(clean)
-                            },
-                            enabled = !state.checked,
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Typ ${target.length} letters") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                            singleLine = true,
-                        )
-                        Text(
-                            "${WordPatternEvaluator.normalize(state.textAnswer).length}/${target.length} letters",
-                            color = Color(0xFF718096),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp,
-                        )
-                        if (state.checked && target.isNotBlank()) {
-                            val guess = WordPatternEvaluator.normalize(state.textAnswer)
-                            if (guess.length == WordPatternEvaluator.normalize(target).length) {
-                                WordPatternFeedbackRow(WordPatternEvaluator.evaluate(guess, target))
-                            }
-                        }
+                        OutlinedTextField(value = state.textAnswer, onValueChange = { raw -> onTextAnswer(raw.filter(Char::isLetter).take(target.length)) }, enabled = !state.checked, modifier = Modifier.fillMaxWidth(), label = { Text("Typ ${target.length} letters") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text), singleLine = true)
+                        Text("${WordPatternEvaluator.normalize(state.textAnswer).length}/${target.length} letters", color = Color(0xFF718096), fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                        if (state.checked && target.isNotBlank()) { val guess = WordPatternEvaluator.normalize(state.textAnswer); if (guess.length == WordPatternEvaluator.normalize(target).length) WordPatternFeedbackRow(WordPatternEvaluator.evaluate(guess, target)) }
                     }
-
-                    LessonInteractionType.Ordering -> state.order.forEachIndexed { index, id ->
-                        val option = step.options.first { it.id == id }
-                        DraggableOrderingCard(
-                            id = id,
-                            index = index,
-                            label = option.label,
-                            lastIndex = state.order.lastIndex,
-                            enabled = !state.checked,
-                            onMove = onMove,
-                        )
-                    }
+                    LessonInteractionType.Ordering -> state.order.forEachIndexed { index, id -> val option = step.options.first { it.id == id }; DraggableOrderingCard(id, index, option.label, state.order.lastIndex, !state.checked, onMove) }
                 }
-
-                OutlinedButton(onClick = onHint, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Rounded.Lightbulb, contentDescription = null)
-                    Text(if (state.showHint) "  Verberg hint" else "  Geef een hint")
-                }
-
-                if (state.showHint) {
-                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7D8)), shape = RoundedCornerShape(16.dp)) {
-                        Text(step.hint, modifier = Modifier.padding(14.dp), color = Color(0xFF604A00), lineHeight = 21.sp)
-                    }
-                }
-
-                if (state.checked) {
-                    Card(
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                        colors = CardDefaults.cardColors(containerColor = if (state.isCorrect == true) Color(0xFFE8F8EE) else Color(0xFFFFF0E2)),
-                        shape = RoundedCornerShape(18.dp),
-                    ) {
-                        Column(modifier = Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text(if (state.isCorrect == true) "Goed gedaan! 🎉" else "We leren van deze fout", fontWeight = FontWeight.Black)
-                            Text(step.explanation, lineHeight = 21.sp)
-                            Text("+${if (state.isCorrect == true) 20 else 5} XP", color = LessonGreen, fontWeight = FontWeight.ExtraBold)
-                        }
-                    }
+                OutlinedButton(onClick = onHint, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.Lightbulb, contentDescription = null); Text(if (state.showHint) "  Verberg hint" else "  Geef een hint") }
+                if (state.showHint) Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF7D8)), shape = RoundedCornerShape(16.dp)) { Text(step.hint, modifier = Modifier.padding(14.dp), color = Color(0xFF604A00), lineHeight = 21.sp) }
+                if (state.checked) Card(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }, colors = CardDefaults.cardColors(containerColor = if (state.isCorrect == true) Color(0xFFE8F8EE) else Color(0xFFFFF0E2)), shape = RoundedCornerShape(18.dp)) {
+                    Column(modifier = Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { Text(if (state.isCorrect == true) "Goed gedaan! 🎉" else "We leren van deze fout", fontWeight = FontWeight.Black); Text(step.explanation, lineHeight = 21.sp); Text("+${if (state.isCorrect == true) 20 else 5} XP", color = LessonGreen, fontWeight = FontWeight.ExtraBold) }
                 }
             }
         }
-
-        Spacer(Modifier.weight(1f))
-        val canCheck = when (step.interaction) {
-            LessonInteractionType.MultipleChoice,
-            LessonInteractionType.ListenChoose -> state.selectedOptionId != null
-            LessonInteractionType.FillBlank -> state.textAnswer.isNotBlank()
-            LessonInteractionType.Ordering -> state.order.isNotEmpty()
-            LessonInteractionType.WordPattern -> {
-                val targetLength = step.targetWord?.let(WordPatternEvaluator::normalize)?.length ?: 0
-                targetLength > 0 && WordPatternEvaluator.normalize(state.textAnswer).length == targetLength
-            }
-        }
-        Button(
-            onClick = if (state.checked) onContinue else onCheck,
-            enabled = state.checked || canCheck,
-            modifier = Modifier.fillMaxWidth().height(58.dp),
-            shape = RoundedCornerShape(20.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = if (state.checked) LessonGreen else LessonYellow, contentColor = if (state.checked) Color.White else Color(0xFF2F2700)),
-        ) {
-            Text(if (state.checked) "Volgende" else "Controleer", fontSize = 17.sp, fontWeight = FontWeight.Black)
-        }
+        val canCheck = when (step.interaction) { LessonInteractionType.MultipleChoice, LessonInteractionType.ListenChoose -> state.selectedOptionId != null; LessonInteractionType.FillBlank -> state.textAnswer.isNotBlank(); LessonInteractionType.Ordering -> state.order.isNotEmpty(); LessonInteractionType.WordPattern -> { val targetLength = step.targetWord?.let(WordPatternEvaluator::normalize)?.length ?: 0; targetLength > 0 && WordPatternEvaluator.normalize(state.textAnswer).length == targetLength } }
+        Button(onClick = if (state.checked) onContinue else onCheck, enabled = state.checked || canCheck, modifier = Modifier.fillMaxWidth().height(58.dp), shape = RoundedCornerShape(20.dp), colors = ButtonDefaults.buttonColors(containerColor = if (state.checked) LessonGreen else LessonYellow, contentColor = if (state.checked) Color.White else Color(0xFF2F2700))) { Text(if (state.checked) "Volgende" else "Controleer", fontSize = 17.sp, fontWeight = FontWeight.Black) }
+        Spacer(Modifier.height(8.dp))
     }
 }
 
 @Composable
 private fun WordPatternFeedbackRow(feedback: List<LetterFeedback>) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         feedback.forEach { item ->
-            val background = when (item.match) {
-                LetterMatch.Correct -> LessonGreen
-                LetterMatch.Present -> LessonYellow
-                LetterMatch.Absent -> Color(0xFFD7DFEA)
-            }
-            val label = when (item.match) {
-                LetterMatch.Correct -> "${item.letter.uppercaseChar()} juiste plek"
-                LetterMatch.Present -> "${item.letter.uppercaseChar()} zit in het woord, andere plek"
-                LetterMatch.Absent -> "${item.letter.uppercaseChar()} niet in het woord"
-            }
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(42.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(background)
-                    .semantics { contentDescription = label },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    item.letter.uppercaseChar().toString(),
-                    fontWeight = FontWeight.Black,
-                    color = if (item.match == LetterMatch.Absent) LessonBlue else Color.White,
-                    fontSize = 15.sp,
-                )
-            }
+            val background = when (item.match) { LetterMatch.Correct -> LessonGreen; LetterMatch.Present -> LessonYellow; LetterMatch.Absent -> Color(0xFFD7DFEA) }
+            val label = when (item.match) { LetterMatch.Correct -> "${item.letter.uppercaseChar()} juiste plek"; LetterMatch.Present -> "${item.letter.uppercaseChar()} zit in het woord, andere plek"; LetterMatch.Absent -> "${item.letter.uppercaseChar()} niet in het woord" }
+            Box(modifier = Modifier.weight(1f).height(42.dp).clip(RoundedCornerShape(8.dp)).background(background).semantics { contentDescription = label }, contentAlignment = Alignment.Center) { Text(item.letter.uppercaseChar().toString(), fontWeight = FontWeight.Black, color = if (item.match == LetterMatch.Absent) LessonBlue else Color.White, fontSize = 15.sp) }
         }
     }
 }
 
 @Composable
-private fun DraggableOrderingCard(
-    id: String,
-    index: Int,
-    label: String,
-    lastIndex: Int,
-    enabled: Boolean,
-    onMove: (String, Int) -> Unit,
-) {
+private fun DraggableOrderingCard(id: String, index: Int, label: String, lastIndex: Int, enabled: Boolean, onMove: (String, Int) -> Unit) {
     var accumulatedDrag by remember(id) { mutableFloatStateOf(0f) }
-    val dragModifier = if (enabled) {
-        Modifier.pointerInput(id, index, lastIndex) {
-            val threshold = 44.dp.toPx()
-            detectDragGesturesAfterLongPress(
-                onDragEnd = { accumulatedDrag = 0f },
-                onDragCancel = { accumulatedDrag = 0f },
-            ) { _, dragAmount ->
-                accumulatedDrag += dragAmount.y
-                when {
-                    accumulatedDrag > threshold && index < lastIndex -> { onMove(id, 1); accumulatedDrag = 0f }
-                    accumulatedDrag < -threshold && index > 0 -> { onMove(id, -1); accumulatedDrag = 0f }
-                }
-            }
-        }
-    } else Modifier
-
-    Card(
-        modifier = Modifier.fillMaxWidth().then(dragModifier),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFD)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD7DFEA)),
-    ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Rounded.DragHandle, contentDescription = "Houd vast en sleep om te sorteren", tint = Color(0xFF8491A5))
-            Text("  ${index + 1}", modifier = Modifier.size(34.dp), fontWeight = FontWeight.Black, color = LessonBlue)
-            Text(label, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold)
-            IconButton(enabled = index > 0 && enabled, onClick = { onMove(id, -1) }) {
-                Icon(Icons.Rounded.ArrowUpward, contentDescription = "Omhoog")
-            }
-            IconButton(enabled = index < lastIndex && enabled, onClick = { onMove(id, 1) }) {
-                Icon(Icons.Rounded.ArrowDownward, contentDescription = "Omlaag")
-            }
-        }
+    val dragModifier = if (enabled) Modifier.pointerInput(id, index, lastIndex) { val threshold = 44.dp.toPx(); detectDragGesturesAfterLongPress(onDragEnd = { accumulatedDrag = 0f }, onDragCancel = { accumulatedDrag = 0f }) { _, dragAmount -> accumulatedDrag += dragAmount.y; when { accumulatedDrag > threshold && index < lastIndex -> { onMove(id, 1); accumulatedDrag = 0f }; accumulatedDrag < -threshold && index > 0 -> { onMove(id, -1); accumulatedDrag = 0f } } } } else Modifier
+    Card(modifier = Modifier.fillMaxWidth().then(dragModifier), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFD)), border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFD7DFEA))) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Rounded.DragHandle, contentDescription = "Houd vast en sleep om te sorteren", tint = Color(0xFF8491A5)); Text("  ${index + 1}", modifier = Modifier.size(34.dp), fontWeight = FontWeight.Black, color = LessonBlue); Text(label, modifier = Modifier.weight(1f), fontWeight = FontWeight.Bold); IconButton(enabled = index > 0 && enabled, onClick = { onMove(id, -1) }) { Icon(Icons.Rounded.ArrowUpward, contentDescription = "Omhoog") }; IconButton(enabled = index < lastIndex && enabled, onClick = { onMove(id, 1) }) { Icon(Icons.Rounded.ArrowDownward, contentDescription = "Omlaag") } }
     }
 }
 
@@ -393,57 +164,17 @@ private fun DutchSpeechButton(text: String) {
     val context = LocalContext.current
     var ready by remember { mutableStateOf(false) }
     val speaker = remember { TextToSpeech(context) { status -> ready = status == TextToSpeech.SUCCESS } }
-    DisposableEffect(speaker) {
-        onDispose {
-            speaker.stop()
-            speaker.shutdown()
-        }
-    }
-    Button(
-        onClick = {
-            if (ready) {
-                speaker.language = Locale("nl", "NL")
-                speaker.setSpeechRate(0.9f)
-                speaker.speak(text, TextToSpeech.QUEUE_FLUSH, null, "leersprong-listen")
-            }
-        },
-        enabled = ready,
-        modifier = Modifier.fillMaxWidth().height(56.dp),
-        shape = RoundedCornerShape(18.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEAF2FF), contentColor = LessonBlue),
-    ) {
-        Icon(Icons.Rounded.VolumeUp, contentDescription = null)
-        Text("  Luister opnieuw", fontWeight = FontWeight.Black)
-    }
+    DisposableEffect(speaker) { onDispose { speaker.stop(); speaker.shutdown() } }
+    Button(onClick = { if (ready) { speaker.language = Locale("nl", "NL"); speaker.setSpeechRate(0.9f); speaker.speak(text, TextToSpeech.QUEUE_FLUSH, null, "leersprong-listen") } }, enabled = ready, modifier = Modifier.fillMaxWidth().height(56.dp), shape = RoundedCornerShape(18.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEAF2FF), contentColor = LessonBlue)) { Icon(Icons.Rounded.VolumeUp, contentDescription = null); Text("  Luister opnieuw", fontWeight = FontWeight.Black) }
 }
 
 @Composable
 private fun LessonComplete(state: LessonUiState, onBack: () -> Unit, onRestart: () -> Unit) {
-    val reviewLabel = state.nextReviewAtEpochMs?.let {
-        DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, Locale("nl", "NL")).format(Date(it))
-    }
-    Column(
-        modifier = Modifier.fillMaxSize().background(LessonBlue).padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Box(Modifier.size(110.dp).clip(CircleShape).background(LessonYellow), contentAlignment = Alignment.Center) {
-            Icon(Icons.Rounded.Star, contentDescription = null, tint = LessonBlue, modifier = Modifier.size(64.dp))
-        }
-        Spacer(Modifier.height(24.dp))
-        Text("Les afgerond!", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Black)
-        Text("Je verdiende ${state.earnedXp} XP", color = Color(0xFFDCEAFF), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("${state.masteryPercent}% beheersing · ${state.correctAnswers} goed", color = Color(0xFFB8ED6F), fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 8.dp))
-        Text("${state.mistakes} fout${if (state.mistakes == 1) "" else "en"} gebruikt om slimmer te oefenen", color = Color(0xFFBFD5FF), textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 12.dp))
-        if (reviewLabel != null) {
-            Text("Slimme herhaling: $reviewLabel", color = Color.White, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
-        }
-        Button(onClick = onBack, modifier = Modifier.fillMaxWidth().padding(top = 18.dp), colors = ButtonDefaults.buttonColors(containerColor = LessonYellow, contentColor = Color(0xFF2F2700))) {
-            Text("Terug naar mijn pad", fontWeight = FontWeight.Black)
-        }
-        OutlinedButton(onClick = onRestart, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-            Icon(Icons.Rounded.Refresh, contentDescription = null)
-            Text("  Nog een keer")
-        }
+    val reviewLabel = state.nextReviewAtEpochMs?.let { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, Locale("nl", "NL")).format(Date(it)) }
+    Column(modifier = Modifier.fillMaxSize().background(LessonBlue).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+        Box(Modifier.size(110.dp).clip(CircleShape).background(LessonYellow), contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Star, contentDescription = null, tint = LessonBlue, modifier = Modifier.size(64.dp)) }
+        Spacer(Modifier.height(24.dp)); Text("Les afgerond!", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Black); Text("Je verdiende ${state.earnedXp} XP", color = Color(0xFFDCEAFF), fontSize = 20.sp, fontWeight = FontWeight.Bold); Text("${state.masteryPercent}% beheersing · ${state.correctAnswers} goed", color = Color(0xFFB8ED6F), fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 8.dp)); Text("${state.mistakes} fout${if (state.mistakes == 1) "" else "en"} gebruikt om slimmer te oefenen", color = Color(0xFFBFD5FF), textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 12.dp)); if (reviewLabel != null) Text("Slimme herhaling: $reviewLabel", color = Color.White, textAlign = TextAlign.Center, fontWeight = FontWeight.SemiBold)
+        Button(onClick = onBack, modifier = Modifier.fillMaxWidth().padding(top = 18.dp), colors = ButtonDefaults.buttonColors(containerColor = LessonYellow, contentColor = Color(0xFF2F2700))) { Text("Terug naar mijn pad", fontWeight = FontWeight.Black) }
+        OutlinedButton(onClick = onRestart, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) { Icon(Icons.Rounded.Refresh, contentDescription = null); Text("  Nog een keer") }
     }
 }
