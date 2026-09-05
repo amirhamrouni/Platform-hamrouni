@@ -76,6 +76,19 @@ class LessonLibraryTest {
     }
 
     @Test
+    fun everyGroupHasThreeDepthLessonsWithFourActivities() {
+        assertEquals(24, SchoolYearDepthLessons.lessons.size)
+        assertEquals(96, SchoolYearDepthLessons.lessons.sumOf { it.steps.size })
+        (1..8).forEach { group ->
+            val depth = SchoolYearDepthLessons.lessons.filter { it.group == group }
+            assertEquals("Groep $group should have three depth lessons", 3, depth.size)
+            assertTrue("Groep $group depth activities incomplete", depth.all { it.steps.size == 4 })
+            assertTrue("Groep $group depth needs Nederlands", depth.any { it.subject == "Nederlands" })
+            assertTrue("Groep $group depth needs Rekenen", depth.any { it.subject == "Rekenen & Wiskunde" })
+        }
+    }
+
+    @Test
     fun groepFourToEightHaveWordChallenge() {
         (4..8).forEach { group ->
             assertTrue(
