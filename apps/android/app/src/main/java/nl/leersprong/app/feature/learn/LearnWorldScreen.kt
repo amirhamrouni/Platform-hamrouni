@@ -37,6 +37,7 @@ private val subjects = listOf(
 fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: (LearnerTab) -> Unit) {
     val groupLessons = LessonLibrary.forGroup(learnerGroup)
     val schoolYearPath = SchoolYearLearningPath.forGroup(learnerGroup, groupLessons)
+    val currentBlock = SchoolYearNow.currentBlock()
     Scaffold(bottomBar = { LearnerBottomBar(selected = LearnerTab.Learn, onSelect = onTab) }) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).background(Color(0xFFF4F7FC)),
@@ -53,9 +54,12 @@ fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: 
                 Card(colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF2FF)), shape = RoundedCornerShape(22.dp)) {
                     Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Rounded.CalendarMonth, null, tint = Color(0xFF0A58CA))
-                        Column {
+                        Column(Modifier.weight(1f)) {
                             Text("Schooljaar 2026–2027", fontWeight = FontWeight.Black, color = Color(0xFF172B4D))
                             Text("5 leerblokken · SLO-richting · adaptief per leerling", color = Color(0xFF5B6B82), fontSize = 13.sp)
+                        }
+                        Surface(color = Color(0xFF0A58CA), shape = RoundedCornerShape(12.dp)) {
+                            Text("NU · ${currentBlock.name}", modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), color = Color.White, fontWeight = FontWeight.Black, fontSize = 11.sp)
                         }
                     }
                 }
@@ -65,13 +69,26 @@ fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: 
                 val blockLessons = schoolYearPath.filter { it.block == block }
                 if (blockLessons.isNotEmpty()) {
                     item(key = "header-${block.name}") {
-                        Column(Modifier.padding(top = 8.dp, bottom = 2.dp)) {
-                            Text(block.label, fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color(0xFF172B4D))
-                            Text(block.period, color = Color(0xFF64748B), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        val isCurrent = block == currentBlock
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = if (isCurrent) Color(0xFF062A70) else Color.Transparent),
+                            shape = RoundedCornerShape(18.dp),
+                        ) {
+                            Column(Modifier.fillMaxWidth().padding(horizontal = if (isCurrent) 14.dp else 0.dp, vertical = 10.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(block.label, fontWeight = FontWeight.Black, fontSize = 20.sp, color = if (isCurrent) Color.White else Color(0xFF172B4D))
+                                    if (isCurrent) {
+                                        Surface(color = Color(0xFFB8ED6F), shape = RoundedCornerShape(10.dp)) {
+                                            Text("HIER BEN JE NU", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), color = Color(0xFF062A70), fontWeight = FontWeight.Black, fontSize = 10.sp)
+                                        }
+                                    }
+                                }
+                                Text(block.period, color = if (isCurrent) Color(0xFFDCEAFF) else Color(0xFF64748B), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                            }
                         }
                     }
                     items(blockLessons, key = { it.lesson.id }) { scheduled ->
-                        LessonCard(scheduled.lesson, scheduled.sequence) { onStartLesson(scheduled.lesson.id) }
+                        LessonCard(scheduled.lesson, scheduled.sequence, isCurrentBlock = block == currentBlock) { onStartLesson(scheduled.lesson.id) }
                     }
                 }
             }
@@ -106,7 +123,7 @@ fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: 
 }
 
 @Composable
-private fun LessonCard(lesson: LessonDefinition, sequence: Int, onStart: () -> Unit) {
+private fun LessonCard(lesson: LessonDefinition, sequence: Int, isCurrentBlock: Boolean, onStart: () -> Unit) {
     val accent = when (lesson.subject) {
         "Nederlands" -> Color(0xFF7C3AED); "Engels" -> Color(0xFF0F8A83); "Wereldoriëntatie" -> Color(0xFF2E7D32)
         "Burgerschap" -> Color(0xFFD05A2B); "Digitale geletterdheid" -> Color(0xFF4557C4); "Kunst & Cultuur" -> Color(0xFFE88A16)
@@ -117,7 +134,10 @@ private fun LessonCard(lesson: LessonDefinition, sequence: Int, onStart: () -> U
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(Modifier.background(accent.copy(alpha = .10f), RoundedCornerShape(14.dp)).padding(10.dp), contentAlignment = Alignment.Center) { Icon(subjectIcon(lesson.subject), null, tint = accent) }
                 Column(Modifier.weight(1f)) {
-                    Text("LES $sequence · ${lesson.subject}", color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("LES $sequence · ${lesson.subject}", color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                        if (isCurrentBlock) Text("· NU", color = Color(0xFF168A4B), fontWeight = FontWeight.Black, fontSize = 11.sp)
+                    }
                     Text(lesson.title, fontWeight = FontWeight.Black, fontSize = 19.sp, color = Color(0xFF172B4D))
                 }
                 Text("± ${lesson.estimatedMinutes} min", color = Color(0xFF6B7B91), fontSize = 12.sp, fontWeight = FontWeight.Bold)
