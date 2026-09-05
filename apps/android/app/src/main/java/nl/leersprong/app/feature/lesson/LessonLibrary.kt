@@ -6,6 +6,7 @@ object LessonLibrary {
         PlatformLessons.lessons +
             SchoolYearCoreLessons.lessons +
             SchoolYearBroadLessons.lessons +
+            SchoolYearDepthLessons.lessons +
             UpperPrimaryLanguageLessons.lessons +
             MathChallengeLessons.lessons +
             SpellingChallengeLessons.lessons
