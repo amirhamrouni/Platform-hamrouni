@@ -38,6 +38,7 @@ fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: 
     val groupLessons = LessonLibrary.forGroup(learnerGroup)
     val schoolYearPath = SchoolYearLearningPath.forGroup(learnerGroup, groupLessons)
     val currentBlock = SchoolYearNow.currentBlock()
+    val recommended = SchoolYearRecommendation.nextLesson(schoolYearPath, currentBlock)
     Scaffold(bottomBar = { LearnerBottomBar(selected = LearnerTab.Learn, onSelect = onTab) }) { padding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(padding).background(Color(0xFFF4F7FC)),
@@ -60,6 +61,28 @@ fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: 
                         }
                         Surface(color = Color(0xFF0A58CA), shape = RoundedCornerShape(12.dp)) {
                             Text("NU · ${currentBlock.name}", modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), color = Color.White, fontWeight = FontWeight.Black, fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+            recommended?.let { next ->
+                item(key = "recommended-${next.lesson.id}") {
+                    Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF062A70)), shape = RoundedCornerShape(24.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(Icons.Rounded.AutoAwesome, null, tint = Color(0xFFB8ED6F))
+                                Text("VOLGENDE STAP", color = Color(0xFFB8ED6F), fontWeight = FontWeight.Black, fontSize = 12.sp)
+                            }
+                            Text(next.lesson.title, color = Color.White, fontWeight = FontWeight.Black, fontSize = 21.sp)
+                            Text("${next.lesson.subject} · ${next.block.label} · ± ${next.lesson.estimatedMinutes} min", color = Color(0xFFDCEAFF), fontSize = 13.sp)
+                            Button(
+                                onClick = { onStartLesson(next.lesson.id) },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB8ED6F), contentColor = Color(0xFF062A70)),
+                            ) {
+                                Icon(Icons.Rounded.PlayArrow, null)
+                                Text("  Ga verder", fontWeight = FontWeight.Black)
+                            }
                         }
                     }
                 }
@@ -88,7 +111,12 @@ fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: 
                         }
                     }
                     items(blockLessons, key = { it.lesson.id }) { scheduled ->
-                        LessonCard(scheduled.lesson, scheduled.sequence, isCurrentBlock = block == currentBlock) { onStartLesson(scheduled.lesson.id) }
+                        LessonCard(
+                            scheduled.lesson,
+                            scheduled.sequence,
+                            isCurrentBlock = block == currentBlock,
+                            isRecommended = scheduled.lesson.id == recommended?.lesson?.id,
+                        ) { onStartLesson(scheduled.lesson.id) }
                     }
                 }
             }
@@ -123,7 +151,7 @@ fun LearnWorldScreen(learnerGroup: Int, onStartLesson: (String) -> Unit, onTab: 
 }
 
 @Composable
-private fun LessonCard(lesson: LessonDefinition, sequence: Int, isCurrentBlock: Boolean, onStart: () -> Unit) {
+private fun LessonCard(lesson: LessonDefinition, sequence: Int, isCurrentBlock: Boolean, isRecommended: Boolean, onStart: () -> Unit) {
     val accent = when (lesson.subject) {
         "Nederlands" -> Color(0xFF7C3AED); "Engels" -> Color(0xFF0F8A83); "Wereldoriëntatie" -> Color(0xFF2E7D32)
         "Burgerschap" -> Color(0xFFD05A2B); "Digitale geletterdheid" -> Color(0xFF4557C4); "Kunst & Cultuur" -> Color(0xFFE88A16)
@@ -136,14 +164,15 @@ private fun LessonCard(lesson: LessonDefinition, sequence: Int, isCurrentBlock: 
                 Column(Modifier.weight(1f)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("LES $sequence · ${lesson.subject}", color = accent, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
-                        if (isCurrentBlock) Text("· NU", color = Color(0xFF168A4B), fontWeight = FontWeight.Black, fontSize = 11.sp)
+                        if (isRecommended) Text("· VOLGENDE", color = Color(0xFF168A4B), fontWeight = FontWeight.Black, fontSize = 11.sp)
+                        else if (isCurrentBlock) Text("· NU", color = Color(0xFF168A4B), fontWeight = FontWeight.Black, fontSize = 11.sp)
                     }
                     Text(lesson.title, fontWeight = FontWeight.Black, fontSize = 19.sp, color = Color(0xFF172B4D))
                 }
                 Text("± ${lesson.estimatedMinutes} min", color = Color(0xFF6B7B91), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
             Text("${lesson.steps.size} kernactiviteiten · hints · feedback · slimme review", color = Color(0xFF64748B), fontSize = 13.sp)
-            Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.PlayArrow, null); Text("  Start les", fontWeight = FontWeight.Black) }
+            Button(onClick = onStart, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.PlayArrow, null); Text(if (isRecommended) "  Ga verder" else "  Start les", fontWeight = FontWeight.Black) }
         }
     }
 }
